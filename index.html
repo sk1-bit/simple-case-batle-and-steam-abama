@@ -9634,6 +9634,774 @@ if (document.readyState === 'loading'){
 </script>
 <!-- PHASE7_JS_END -->
 
+<!-- PHASE8_CSS_START -->
+<style id="hvh-p8-css">
+/* ═══════════════════════════════════════════════════════════════════
+   PHASE 8 — VISUAL OVERHAUL  (10 features, monkey-patched onto P1-7)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── F1: ANIMATIONS & MICRO-INTERACTIONS ─────────────────────────── */
+@keyframes p8FadeUp{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes p8FadeDown{from{opacity:0;transform:translateY(-14px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes p8ZoomIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+@keyframes p8Pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+@keyframes p8Shake{0%,100%{transform:translateX(0)}10%,30%,50%,70%,90%{transform:translateX(-3px)}20%,40%,60%,80%{transform:translateX(3px)}}
+@keyframes p8Float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes p8Glitch1{0%,100%{clip-path:inset(0 0 0 0);transform:translate(0,0)}10%{clip-path:inset(20% 0 60% 0);transform:translate(-2px,0)}20%{clip-path:inset(40% 0 40% 0);transform:translate(2px,0)}30%{clip-path:inset(80% 0 0 0);transform:translate(-1px,0)}40%{clip-path:inset(0 0 80% 0);transform:translate(1px,0)}}
+@keyframes p8RippleOut{from{transform:scale(0);opacity:.45}to{transform:scale(2.5);opacity:0}}
+@keyframes p8GradientShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+
+/* Ripple effect for buttons */
+.p8-ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.55);transform:scale(0);animation:p8RippleOut .65s cubic-bezier(.4,0,.2,1) forwards;pointer-events:none;z-index:0;mix-blend-mode:overlay}
+button,.tab,.cat-chip,.neon-btn,.case-card,.sub-card,.gf-btn,.quick-btn{position:relative;overflow:hidden}
+
+/* Modal/overlay entrance polish (Phase 7 pay modal + others) */
+#pay-modal.show .pay-modal-content,#p7-3ds-modal,.p8-modal{animation:p8FadeUp .35s cubic-bezier(.34,1.3,.64,1) both}
+.modal-overlay.show,#pay-modal.show{animation:p8ZoomIn .25s ease both}
+
+/* Confetti container */
+#p8-confetti{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;overflow:hidden}
+.p8-confetti-piece{position:absolute;width:10px;height:14px;will-change:transform,opacity}
+
+/* Floating particle text (+N, +XP, etc) */
+.p8-floater{position:fixed;font-family:'Orbitron',sans-serif;font-weight:900;font-size:1.1rem;pointer-events:none;z-index:9998;text-shadow:0 0 18px currentColor;will-change:transform,opacity;letter-spacing:1px}
+
+/* Parallax stars wrapper (atop existing aurora) */
+.p8-stars{position:fixed;inset:0;pointer-events:none;z-index:0;will-change:transform;transition:transform .25s ease-out}
+.p8-stars span{position:absolute;background:#fff;border-radius:50%;opacity:.7;box-shadow:0 0 6px #fff}
+
+/* ── F2: 3D CASE / CINEMATIC OPENING ─────────────────────────────── */
+.case-card .p8-3d-light{position:absolute;inset:0;border-radius:14px;pointer-events:none;background:radial-gradient(circle 200px at var(--mx,50%) var(--my,50%),rgba(255,255,255,.18),transparent 65%);opacity:0;transition:opacity .25s;z-index:2;mix-blend-mode:screen}
+.case-card:hover .p8-3d-light{opacity:1}
+.case-card{box-shadow:0 8px 24px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06)}
+.case-card:hover{box-shadow:0 16px 40px rgba(0,0,0,.6),0 0 32px rgba(0,200,255,.25),inset 0 1px 0 rgba(255,255,255,.12)}
+
+/* Cinematic opening overlay (kicks in for legendary drops) */
+#p8-cinema{position:fixed;inset:0;background:radial-gradient(circle at center,rgba(255,180,0,.35),rgba(0,0,0,.92) 65%);z-index:9990;display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);animation:p8FadeUp .4s ease both;pointer-events:none}
+#p8-cinema.show{display:flex}
+#p8-cinema .cin-rays{position:absolute;inset:-50%;background:conic-gradient(from 0deg,transparent 0deg,rgba(255,200,0,.18) 12deg,transparent 24deg,transparent 60deg,rgba(255,200,0,.12) 72deg,transparent 84deg);animation:p8Spin 8s linear infinite;mix-blend-mode:screen}
+@keyframes p8Spin{to{transform:rotate(360deg)}}
+.cin-title{position:relative;font-family:'Orbitron',sans-serif;font-size:3rem;letter-spacing:6px;background:linear-gradient(90deg,#ffd700,#ff9000,#ffd700);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:p8GradientShift 2s linear infinite;text-shadow:0 0 60px rgba(255,180,0,.8);font-weight:900}
+
+/* ── F3: NEW THEMES — Vaporwave / AMOLED / Glassmorphism / Light / Synthwave ── */
+body[data-theme="vaporwave"]{--th-accent:#ff77ff;--th-accent2:#00f0ff;--th-glow:rgba(255,119,255,.6)}
+body[data-theme="vaporwave"]{background:linear-gradient(180deg,#1a0033,#0a0420)!important}
+body[data-theme="vaporwave"] .aurora{background:radial-gradient(60% 50% at 20% 30%,rgba(255,119,255,.22),transparent 60%),radial-gradient(50% 40% at 80% 60%,rgba(0,240,255,.18),transparent 60%)}
+body[data-theme="vaporwave"] .header{background:linear-gradient(180deg,rgba(26,0,51,.96),rgba(15,4,32,.92));border-bottom-color:rgba(255,119,255,.25)}
+body[data-theme="vaporwave"] .logo{background:linear-gradient(90deg,#ff77ff,#00f0ff,#ff77ff);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:p8GradientShift 4s linear infinite}
+body[data-theme="vaporwave"] .balance{color:#00f0ff;text-shadow:0 0 14px rgba(0,240,255,.6)}
+body[data-theme="vaporwave"] .neon-btn{background:linear-gradient(135deg,#ff77ff,#00f0ff);box-shadow:0 0 28px rgba(255,119,255,.45)}
+body[data-theme="vaporwave"] .tab.active{background:linear-gradient(135deg,rgba(255,119,255,.16),rgba(0,240,255,.06));color:#ff99ff;box-shadow:inset 0 0 0 1px rgba(255,119,255,.4)}
+
+body[data-theme="amoled"]{--th-accent:#fff;--th-accent2:#ccc;--th-glow:rgba(255,255,255,.4)}
+body[data-theme="amoled"]{background:#000!important}
+body[data-theme="amoled"] .aurora{background:radial-gradient(60% 50% at 20% 30%,rgba(255,255,255,.04),transparent 60%)}
+body[data-theme="amoled"] .header{background:#000;border-bottom-color:rgba(255,255,255,.08)}
+body[data-theme="amoled"] .logo{background:linear-gradient(90deg,#fff,#aaa,#fff);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:p8GradientShift 6s linear infinite}
+body[data-theme="amoled"] .balance{color:#fff;text-shadow:0 0 14px rgba(255,255,255,.5)}
+body[data-theme="amoled"] .neon-btn{background:linear-gradient(135deg,#fff,#aaa);color:#000;box-shadow:0 0 22px rgba(255,255,255,.3)}
+body[data-theme="amoled"] .tab.active{background:rgba(255,255,255,.08);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+body[data-theme="amoled"] .case-card{background:rgba(15,15,15,.95);border-color:rgba(255,255,255,.06)}
+
+body[data-theme="glass"]{--th-accent:#7df9ff;--th-accent2:#aab4ff;--th-glow:rgba(125,249,255,.4)}
+body[data-theme="glass"]{background:linear-gradient(135deg,#1a2a4a,#0e1a30)!important}
+body[data-theme="glass"] .aurora{background:radial-gradient(60% 50% at 30% 25%,rgba(125,249,255,.18),transparent 60%),radial-gradient(50% 40% at 70% 70%,rgba(170,180,255,.16),transparent 60%)}
+body[data-theme="glass"] .header,body[data-theme="glass"] .case-card,body[data-theme="glass"] .tab{backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);background:rgba(20,30,55,.45);border-color:rgba(255,255,255,.12)}
+body[data-theme="glass"] .logo{color:#fff;text-shadow:0 0 24px rgba(125,249,255,.7)}
+body[data-theme="glass"] .balance{color:#7df9ff;text-shadow:0 0 14px rgba(125,249,255,.6)}
+body[data-theme="glass"] .neon-btn{background:rgba(125,249,255,.22);backdrop-filter:blur(12px);border:1px solid rgba(125,249,255,.4);color:#fff;box-shadow:0 4px 24px rgba(125,249,255,.25)}
+
+body[data-theme="light"]{--th-accent:#0a84ff;--th-accent2:#9b59ff;--th-glow:rgba(10,132,255,.4)}
+body[data-theme="light"]{background:linear-gradient(180deg,#f5f7fa,#e6eaf2)!important;color:#1a1a2e}
+body[data-theme="light"] .aurora{background:radial-gradient(60% 50% at 30% 25%,rgba(10,132,255,.08),transparent 60%),radial-gradient(50% 40% at 70% 70%,rgba(155,89,255,.07),transparent 60%)}
+body[data-theme="light"] .header{background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(248,250,254,.92));border-bottom-color:rgba(10,132,255,.18);color:#1a1a2e}
+body[data-theme="light"] .logo{background:linear-gradient(90deg,#0a84ff,#9b59ff,#0a84ff);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:p8GradientShift 4s linear infinite}
+body[data-theme="light"] .balance{color:#0a84ff;text-shadow:none;background:rgba(10,132,255,.08);border-color:rgba(10,132,255,.25)}
+body[data-theme="light"] .case-card{background:rgba(255,255,255,.85);color:#1a1a2e;border-color:rgba(10,132,255,.15);box-shadow:0 8px 24px rgba(0,0,0,.08)}
+body[data-theme="light"] .case-card:hover{box-shadow:0 16px 40px rgba(10,132,255,.18)}
+body[data-theme="light"] .tab{color:#5a6a85}
+body[data-theme="light"] .tab.active{background:rgba(10,132,255,.1);color:#0a84ff;box-shadow:inset 0 0 0 1px rgba(10,132,255,.3)}
+body[data-theme="light"] .neon-btn{background:linear-gradient(135deg,#0a84ff,#9b59ff);color:#fff;box-shadow:0 4px 20px rgba(10,132,255,.35)}
+
+body[data-theme="synthwave"]{--th-accent:#f72585;--th-accent2:#7209b7;--th-glow:rgba(247,37,133,.55)}
+body[data-theme="synthwave"]{background:linear-gradient(180deg,#0a0a2e,#1a1a4e)!important}
+body[data-theme="synthwave"] .aurora{background:radial-gradient(60% 50% at 30% 25%,rgba(247,37,133,.22),transparent 60%),radial-gradient(50% 40% at 70% 70%,rgba(114,9,183,.18),transparent 60%)}
+body[data-theme="synthwave"] .header{background:linear-gradient(180deg,rgba(10,10,46,.96),rgba(26,26,78,.92))}
+body[data-theme="synthwave"] .logo{background:linear-gradient(90deg,#f72585,#b5179e,#7209b7,#f72585);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:p8GradientShift 3s linear infinite}
+body[data-theme="synthwave"] .balance{color:#f72585;text-shadow:0 0 14px rgba(247,37,133,.7)}
+body[data-theme="synthwave"] .neon-btn{background:linear-gradient(135deg,#f72585,#7209b7);box-shadow:0 0 30px rgba(247,37,133,.55)}
+body[data-theme="synthwave"] .tab.active{background:linear-gradient(135deg,rgba(247,37,133,.18),rgba(114,9,183,.08));color:#ff5fa8;box-shadow:inset 0 0 0 1px rgba(247,37,133,.45)}
+
+/* ── F4: RARITY VISUAL EFFECTS ───────────────────────────────────── */
+.case-card[data-max-rarity="legendary"]{
+  border-color:rgba(255,200,0,.4);
+  animation:p8LegendaryPulse 3.5s ease-in-out infinite;
+}
+.case-card[data-max-rarity="legendary"]::before{
+  background:radial-gradient(circle 200px at 50% 0%,rgba(255,200,0,.18),transparent 70%)!important;
+  opacity:.5!important;
+}
+.case-card[data-max-rarity="epic"]{border-color:rgba(192,96,255,.35)}
+.case-card[data-max-rarity="epic"]::before{background:radial-gradient(circle 200px at 50% 0%,rgba(192,96,255,.14),transparent 70%)!important;opacity:.4!important}
+.case-card[data-max-rarity="rare"]{border-color:rgba(0,170,255,.3)}
+@keyframes p8LegendaryPulse{0%,100%{box-shadow:0 8px 24px rgba(0,0,0,.45),0 0 0 rgba(255,200,0,0)}50%{box-shadow:0 8px 24px rgba(0,0,0,.45),0 0 32px rgba(255,200,0,.45)}}
+
+/* Mythical rarity (new — rainbow holo) */
+.rarity-mythical,.rarity-badge.rarity-mythical{
+  background:linear-gradient(90deg,#ff0080,#ff8c00,#ffd700,#00ff80,#00d4ff,#7a5cff,#ff0080)!important;
+  background-size:300% 100%!important;
+  color:#fff!important;
+  border:1px solid rgba(255,255,255,.5)!important;
+  animation:p8GradientShift 3s linear infinite;
+  text-shadow:0 0 8px rgba(0,0,0,.6);
+}
+
+/* ── F5: LIVE-FEED CARDS ENHANCEMENT ─────────────────────────────── */
+.feed-track .feed-item.p8-enhanced{display:inline-flex;align-items:center;gap:10px;padding:4px 12px 4px 4px;background:rgba(255,255,255,.04);border-radius:24px;border:1px solid rgba(255,255,255,.06);margin:0 4px;transition:all .25s}
+.feed-track .feed-item.p8-enhanced:hover{background:rgba(0,200,255,.12);border-color:rgba(0,200,255,.3);transform:translateY(-2px)}
+.feed-track .feed-item.p8-enhanced .feed-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--ag,#0af),var(--ag2,#7a5cff));display:inline-flex;align-items:center;justify-content:center;font-size:.65rem;color:#fff;font-weight:900;flex-shrink:0}
+.feed-track .feed-item.p8-enhanced.legendary{border-color:rgba(255,200,0,.45);background:rgba(255,200,0,.12);box-shadow:0 0 18px rgba(255,200,0,.25)}
+.feed-track .feed-item.p8-enhanced.legendary::before{content:'⚡';margin-right:4px;animation:p8Pulse 1s infinite}
+.feed-track .feed-item.p8-enhanced.epic{border-color:rgba(192,96,255,.35)}
+
+/* Top notification ticker */
+#p8-toast-container{position:fixed;top:84px;right:18px;z-index:9997;display:flex;flex-direction:column;gap:8px;max-width:340px;pointer-events:none}
+.p8-toast{background:rgba(15,18,30,.96);backdrop-filter:blur(12px);border:1px solid rgba(0,200,255,.25);border-radius:10px;padding:10px 14px;color:#dfe6f0;font-family:'Inter',sans-serif;font-size:.82rem;font-weight:600;animation:p8FadeDown .35s cubic-bezier(.34,1.3,.64,1) both;box-shadow:0 8px 32px rgba(0,0,0,.5);pointer-events:auto;display:flex;align-items:center;gap:10px;min-width:240px}
+.p8-toast.legendary{border-color:rgba(255,200,0,.5);background:linear-gradient(135deg,rgba(60,40,10,.96),rgba(15,18,30,.96))}
+.p8-toast.success{border-color:rgba(0,220,120,.5)}
+.p8-toast.danger{border-color:rgba(255,80,100,.5)}
+.p8-toast .toast-icon{font-size:1.1rem;flex-shrink:0}
+.p8-toast.hide{animation:p8FadeUp .3s ease reverse both}
+
+/* ── F6: MINI-GAMES POLISH ───────────────────────────────────────── */
+.p8-screen-shake{animation:p8Shake .5s cubic-bezier(.36,.07,.19,.97)}
+.p8-particle{position:absolute;border-radius:50%;pointer-events:none;will-change:transform,opacity}
+.p8-explosion{position:absolute;width:80px;height:80px;border-radius:50%;background:radial-gradient(circle,rgba(255,80,40,.95),rgba(255,160,40,.5) 35%,transparent 70%);transform:translate(-50%,-50%) scale(0);pointer-events:none;animation:p8ExplodeOut .6s ease-out both;mix-blend-mode:screen}
+@keyframes p8ExplodeOut{0%{transform:translate(-50%,-50%) scale(0);opacity:1}40%{transform:translate(-50%,-50%) scale(1.8);opacity:.95}100%{transform:translate(-50%,-50%) scale(3.2);opacity:0}}
+
+/* ── F7: HEADER + LOGO + STREAK FIRE ─────────────────────────────── */
+.logo{cursor:pointer;transition:transform .25s;position:relative}
+.logo:hover{transform:scale(1.04) rotate(-1deg);filter:brightness(1.15)}
+.logo.p8-glitching::before,.logo.p8-glitching::after{content:attr(data-text);position:absolute;left:0;top:0;width:100%;height:100%;background:inherit;-webkit-background-clip:text;background-clip:text;color:transparent;pointer-events:none}
+.logo.p8-glitching::before{animation:p8Glitch1 .4s steps(2,end) infinite;text-shadow:2px 0 #ff003c}
+.logo.p8-glitching::after{animation:p8Glitch1 .4s steps(2,end) reverse infinite;text-shadow:-2px 0 #00f0ff}
+
+/* Streak fire icon when >= 7 */
+.streak-badge.p8-fire{animation:p8Float 1.6s ease-in-out infinite;background:linear-gradient(135deg,#ff6a00,#ee0979);box-shadow:0 0 24px rgba(255,106,0,.55)!important}
+.streak-badge.p8-fire::before{content:'🔥';font-size:1rem;margin-right:4px}
+
+/* XP-bar level-up particle burst */
+.xp-bar-fill.p8-levelup{animation:p8Pulse .5s ease}
+
+/* ── F8: SKELETON SCREENS & EMPTY STATES ─────────────────────────── */
+.p8-skel{background:linear-gradient(110deg,rgba(255,255,255,.03) 8%,rgba(255,255,255,.10) 18%,rgba(255,255,255,.03) 33%);background-size:200% 100%;border-radius:8px;animation:p8SkelShine 1.4s linear infinite}
+@keyframes p8SkelShine{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.p8-skel-card{height:160px;width:100%;margin:8px 0}
+.p8-skel-line{height:14px;width:100%;margin:6px 0}
+.p8-skel-line.s{width:50%}.p8-skel-line.m{width:75%}.p8-skel-line.l{width:90%}
+
+/* Empty inventory illustration */
+.p8-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:280px;color:#7a8aa5;text-align:center;animation:p8FadeUp .4s ease both}
+.p8-empty .p8-empty-icon{font-size:5rem;margin-bottom:14px;opacity:.4;animation:p8Float 3s ease-in-out infinite}
+.p8-empty .p8-empty-title{font-family:'Orbitron',sans-serif;font-size:1.1rem;letter-spacing:2px;color:#aab8d0;font-weight:700;margin-bottom:6px}
+.p8-empty .p8-empty-text{font-size:.85rem;opacity:.7;max-width:380px}
+.p8-empty .p8-empty-cta{margin-top:18px;padding:10px 22px;background:linear-gradient(135deg,var(--th-accent,#0af),var(--th-accent2,#7a5cff));border:none;border-radius:8px;color:#fff;font-family:'Orbitron',sans-serif;font-weight:700;letter-spacing:1.5px;font-size:.78rem;cursor:pointer;text-transform:uppercase;transition:transform .2s;box-shadow:0 4px 18px rgba(0,200,255,.35)}
+.p8-empty .p8-empty-cta:hover{transform:translateY(-2px) scale(1.04)}
+
+/* ── F9: VOLUME SLIDER (settings panel) ──────────────────────────── */
+.p8-vol-row{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.p8-vol-row label{font-family:'Orbitron',sans-serif;font-size:.62rem;letter-spacing:1.5px;color:#aab8d0;font-weight:700;display:flex;justify-content:space-between}
+.p8-vol-slider{-webkit-appearance:none;appearance:none;width:100%;height:6px;background:linear-gradient(90deg,#7a5cff 0%,#0af var(--vp,50%),rgba(255,255,255,.08) var(--vp,50%));border-radius:3px;outline:none;cursor:pointer}
+.p8-vol-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:#fff;border-radius:50%;cursor:pointer;box-shadow:0 0 8px rgba(0,200,255,.6)}
+.p8-vol-slider::-moz-range-thumb{width:16px;height:16px;background:#fff;border-radius:50%;cursor:pointer;border:none;box-shadow:0 0 8px rgba(0,200,255,.6)}
+
+/* ── F10: MOBILE ─ Bottom sheet modals + haptics indicator ───────── */
+@media (max-width:768px){
+  /* Pay modal → bottom-sheet style */
+  #pay-modal.show{align-items:flex-end!important;padding:0!important}
+  #pay-modal .pay-modal-content,#pay-modal > div:first-child{
+    border-radius:18px 18px 0 0!important;
+    max-height:92vh!important;
+    width:100%!important;
+    margin:0!important;
+    animation:p8SheetIn .35s cubic-bezier(.34,1.3,.64,1) both!important;
+  }
+  @keyframes p8SheetIn{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  /* drag handle for bottom-sheet */
+  .p8-sheet-handle{width:42px;height:4px;background:rgba(255,255,255,.25);border-radius:2px;margin:8px auto 4px;display:block}
+  /* live-feed shrinks */
+  .feed-track .feed-item.p8-enhanced{padding:2px 8px 2px 2px;margin:0 2px}
+  .feed-track .feed-item.p8-enhanced .feed-avatar{width:20px;height:20px;font-size:.55rem}
+  /* tab bar -> denser */
+  .tab{padding:8px 10px;font-size:.7rem}
+}
+
+/* ── Counter pop on balance/XP change ────────────────────────────── */
+.p8-num-pop{animation:p8NumPop .55s cubic-bezier(.34,1.5,.64,1)}
+@keyframes p8NumPop{0%{transform:scale(1)}50%{transform:scale(1.18);color:#00ff88;text-shadow:0 0 16px rgba(0,255,136,.7)}100%{transform:scale(1)}}
+
+/* Settings panel — add theme thumbnails for the new themes */
+.sp-theme[data-th="vaporwave"]{background:linear-gradient(135deg,#ff77ff,#00f0ff)}
+.sp-theme[data-th="amoled"]{background:linear-gradient(135deg,#000,#444)}
+.sp-theme[data-th="glass"]{background:linear-gradient(135deg,#7df9ff,#aab4ff);backdrop-filter:blur(4px)}
+.sp-theme[data-th="light"]{background:linear-gradient(135deg,#f5f7fa,#0a84ff)}
+.sp-theme[data-th="synthwave"]{background:linear-gradient(135deg,#f72585,#7209b7)}
+.sp-themes{grid-template-columns:repeat(3,1fr)!important;gap:8px!important}
+
+/* Sound-bar indicator for music playing */
+.p8-audio-bars{display:inline-flex;gap:2px;align-items:flex-end;height:14px;margin-left:6px}
+.p8-audio-bars span{display:inline-block;width:3px;background:currentColor;border-radius:1px;animation:p8AudioBar 1s ease-in-out infinite}
+.p8-audio-bars span:nth-child(1){animation-delay:0s;height:60%}
+.p8-audio-bars span:nth-child(2){animation-delay:.2s;height:100%}
+.p8-audio-bars span:nth-child(3){animation-delay:.4s;height:75%}
+@keyframes p8AudioBar{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+
+/* Reduced-motion respect */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+<!-- PHASE8_CSS_END -->
+
+<!-- PHASE8_JS_START -->
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   PHASE 8 JS — visual overhaul (IIFE, monkey-patches existing fns)
+   ═══════════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+if (window.P8) return;
+const P8 = window.P8 = {
+  state: {
+    sfxVol: parseFloat(localStorage.getItem('hvh_p8_vol') || '0.5'),
+    hapticOn: localStorage.getItem('hvh_p8_haptic') !== '0',
+    parallaxOn: true,
+  },
+  themes: ['default','skeet','cyberpunk','neon','vaporwave','amoled','glass','light','synthwave'],
+};
+
+/* ─────────────────────────────────────────────────────────────────
+   F1: Ripple effect on every interactive element + parallax stars
+   ───────────────────────────────────────────────────────────────── */
+function addRipple(e){
+  const t = e.currentTarget;
+  if (!t || t.matches('input,textarea,select')) return;
+  const r = t.getBoundingClientRect();
+  const ripple = document.createElement('span');
+  const size = Math.max(r.width, r.height) * 1.2;
+  ripple.className = 'p8-ripple';
+  ripple.style.width = ripple.style.height = size+'px';
+  ripple.style.left = (e.clientX - r.left - size/2)+'px';
+  ripple.style.top = (e.clientY - r.top - size/2)+'px';
+  t.appendChild(ripple);
+  setTimeout(()=>ripple.remove(), 700);
+}
+document.addEventListener('click', (e)=>{
+  const t = e.target.closest('button,.tab,.cat-chip,.neon-btn,.case-card,.sub-card,.gf-btn,.quick-btn,.daily-claim,.streak-badge');
+  if (t) {
+    const fake = {currentTarget:t, clientX:e.clientX, clientY:e.clientY};
+    addRipple(fake);
+    if (P8.state.hapticOn && navigator.vibrate) try{ navigator.vibrate(8); }catch(_){}
+  }
+}, true);
+
+// Parallax stars
+(function buildStars(){
+  if (document.getElementById('p8-stars-layer')) return;
+  const layer = document.createElement('div');
+  layer.id = 'p8-stars-layer';
+  layer.className = 'p8-stars';
+  for (let i=0; i<35; i++){
+    const s = document.createElement('span');
+    const sz = 1 + Math.random()*2.5;
+    s.style.width = s.style.height = sz+'px';
+    s.style.left = (Math.random()*100)+'%';
+    s.style.top = (Math.random()*100)+'%';
+    s.style.opacity = (0.3 + Math.random()*0.5).toFixed(2);
+    s.style.animationDelay = (Math.random()*2)+'s';
+    layer.appendChild(s);
+  }
+  document.body.appendChild(layer);
+  let mx=0,my=0;
+  document.addEventListener('mousemove', (e)=>{
+    if (!P8.state.parallaxOn) return;
+    mx = (e.clientX / window.innerWidth - .5) * 18;
+    my = (e.clientY / window.innerHeight - .5) * 12;
+    layer.style.transform = `translate(${mx}px, ${my}px)`;
+  }, {passive:true});
+})();
+
+// ─── Floater (+N₽, +XP) ───
+P8.floater = function(text, color, opts){
+  opts = opts || {};
+  const el = document.createElement('div');
+  el.className = 'p8-floater';
+  el.textContent = text;
+  el.style.color = color || '#00ff88';
+  // anchor: try to find balance, else center
+  let target = opts.anchor;
+  if (!target) target = document.querySelector('.balance') || document.body;
+  const r = target.getBoundingClientRect();
+  el.style.left = (r.left + r.width/2 + (Math.random()*30-15))+'px';
+  el.style.top = (r.top + r.height + 4)+'px';
+  document.body.appendChild(el);
+  const start = performance.now();
+  function tick(now){
+    const t = Math.min(1, (now-start)/1500);
+    const e = 1 - Math.pow(1-t, 2);
+    el.style.transform = `translate(${Math.sin(t*3)*6}px, ${-90*e}px)`;
+    el.style.opacity = (1 - t).toFixed(2);
+    if (t < 1) requestAnimationFrame(tick);
+    else el.remove();
+  }
+  requestAnimationFrame(tick);
+};
+
+// ─── Confetti burst ───
+P8.confetti = function(opts){
+  opts = opts || {};
+  let host = document.getElementById('p8-confetti');
+  if (!host){ host=document.createElement('div'); host.id='p8-confetti'; document.body.appendChild(host); }
+  const N = opts.count || 80;
+  const colors = opts.colors || ['#ff3df8','#00f0ff','#ffd700','#00ff88','#ff6a00','#9b5cff'];
+  const ox = opts.x != null ? opts.x : window.innerWidth/2;
+  const oy = opts.y != null ? opts.y : window.innerHeight/2;
+  for (let i=0; i<N; i++){
+    const p = document.createElement('div');
+    p.className = 'p8-confetti-piece';
+    p.style.left = ox+'px';
+    p.style.top = oy+'px';
+    p.style.background = colors[Math.floor(Math.random()*colors.length)];
+    p.style.borderRadius = Math.random()<.4?'50%':'2px';
+    p.style.transform = `rotate(${Math.random()*360}deg)`;
+    host.appendChild(p);
+    const angle = (Math.random()*2-1)*Math.PI; // any angle
+    const speed = 600 + Math.random()*700;
+    const vx = Math.cos(angle)*speed*(Math.random()*.6+.4);
+    const vy = -Math.abs(Math.sin(angle)*speed) - 200;
+    const grav = 1500 + Math.random()*500;
+    const rotSpeed = (Math.random()*2-1)*720;
+    const start = performance.now();
+    (function animate(){
+      requestAnimationFrame(function step(now){
+        const t = (now-start)/1000;
+        if (t > 2.5){ p.remove(); return; }
+        const x = vx*t;
+        const y = vy*t + grav*t*t*.5;
+        p.style.transform = `translate(${x}px,${y}px) rotate(${rotSpeed*t}deg)`;
+        p.style.opacity = (1 - t/2.5).toFixed(2);
+        requestAnimationFrame(step);
+      });
+    })();
+  }
+};
+
+/* ─────────────────────────────────────────────────────────────────
+   F2: 3D case-card lighting + cinematic legendary opening
+   ───────────────────────────────────────────────────────────────── */
+document.addEventListener('mousemove', (e)=>{
+  const card = e.target.closest('.case-card');
+  if (!card) return;
+  const r = card.getBoundingClientRect();
+  const mx = ((e.clientX - r.left)/r.width)*100;
+  const my = ((e.clientY - r.top)/r.height)*100;
+  if (!card.querySelector('.p8-3d-light')){
+    const lt = document.createElement('div');
+    lt.className = 'p8-3d-light';
+    card.appendChild(lt);
+  }
+  card.style.setProperty('--mx', mx+'%');
+  card.style.setProperty('--my', my+'%');
+}, {passive:true});
+
+P8.cinematic = function(title, durationMs){
+  let el = document.getElementById('p8-cinema');
+  if (!el){
+    el = document.createElement('div');
+    el.id = 'p8-cinema';
+    el.innerHTML = '<div class="cin-rays"></div><div class="cin-title">'+title+'</div>';
+    document.body.appendChild(el);
+  } else {
+    el.querySelector('.cin-title').textContent = title;
+  }
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), durationMs || 2200);
+};
+
+/* ─────────────────────────────────────────────────────────────────
+   F3: Add new themes to settings panel
+   ───────────────────────────────────────────────────────────────── */
+function addNewThemesToSettings(){
+  const grid = document.querySelector('.sp-themes');
+  if (!grid) return;
+  const newThemes = [
+    ['vaporwave','VAPORWAVE'],
+    ['amoled','AMOLED'],
+    ['glass','GLASS'],
+    ['light','LIGHT'],
+    ['synthwave','SYNTH'],
+  ];
+  newThemes.forEach(([id,name])=>{
+    if (grid.querySelector(`.sp-theme[data-th="${id}"]`)) return;
+    const el = document.createElement('div');
+    el.className = 'sp-theme';
+    el.dataset.th = id;
+    el.innerHTML = `<div class="sp-theme-name">${name}</div>`;
+    el.onclick = function(){
+      grid.querySelectorAll('.sp-theme').forEach(x=>x.classList.remove('sel'));
+      el.classList.add('sel');
+      document.body.dataset.theme = id;
+      localStorage.setItem('hvh_theme', id);
+      P8.toast('🎨 Тема: '+name, 'success');
+    };
+    grid.appendChild(el);
+  });
+  // Restore saved theme if it's a P8-only theme
+  const saved = localStorage.getItem('hvh_theme');
+  if (saved && ['vaporwave','amoled','glass','light','synthwave'].indexOf(saved) >= 0){
+    document.body.dataset.theme = saved;
+    const sel = grid.querySelector(`.sp-theme[data-th="${saved}"]`);
+    if (sel){ grid.querySelectorAll('.sp-theme').forEach(x=>x.classList.remove('sel')); sel.classList.add('sel'); }
+  }
+}
+setTimeout(addNewThemesToSettings, 400);
+setTimeout(addNewThemesToSettings, 1500);
+
+/* ─────────────────────────────────────────────────────────────────
+   F4: Rarity glow on case-card (based on highest possible rarity)
+   ───────────────────────────────────────────────────────────────── */
+function applyRarityGlow(){
+  document.querySelectorAll('.case-card').forEach(card=>{
+    if (card.dataset.maxRarity) return;
+    let max = 'common';
+    if (card.classList.contains('cls-leg') || card.classList.contains('legendary') || /knife|dragon|howl|butterfly/i.test(card.textContent||'')) max='legendary';
+    else if (card.classList.contains('cls-epic') || card.classList.contains('epic')) max='epic';
+    else if (card.classList.contains('cls-rare') || card.classList.contains('rare')) max='rare';
+    // fallback: any card with price > 1000 likely has legendary potential
+    const priceEl = card.querySelector('.card-price');
+    const priceTxt = priceEl ? priceEl.textContent : '';
+    const priceNum = parseInt((priceTxt.match(/\d+/g)||['0']).join(''))||0;
+    if (priceNum >= 1000) max='legendary';
+    else if (priceNum >= 500) max='epic';
+    else if (priceNum >= 200) max='rare';
+    card.dataset.maxRarity = max;
+  });
+}
+setTimeout(applyRarityGlow, 600);
+setTimeout(applyRarityGlow, 2000);
+
+/* ─────────────────────────────────────────────────────────────────
+   F5: Live-feed redesign (enhance existing feed items)
+   ───────────────────────────────────────────────────────────────── */
+function enhanceFeedItems(){
+  document.querySelectorAll('.feed-track .feed-item:not(.p8-enhanced)').forEach((it, i)=>{
+    it.classList.add('p8-enhanced');
+    const txt = it.textContent || '';
+    const m = txt.match(/^(\S+).*?([\d\s]+)\s*₽/);
+    const user = (txt.split('из')[0]||'').trim().slice(0,12);
+    const amt = m ? parseInt(m[2].replace(/\s/g,'')) : 0;
+    const initial = user.charAt(0).toUpperCase() || '?';
+    const colors = [['#ff3df8','#9b5cff'],['#00d4ff','#0080ff'],['#ffd700','#ff6a00'],['#00ff88','#00aa55'],['#ff5577','#aa2244']];
+    const c = colors[i % colors.length];
+    const avatar = document.createElement('span');
+    avatar.className = 'feed-avatar';
+    avatar.style.setProperty('--ag', c[0]);
+    avatar.style.setProperty('--ag2', c[1]);
+    avatar.textContent = initial;
+    it.insertBefore(avatar, it.firstChild);
+    if (amt >= 30000) it.classList.add('legendary');
+    else if (amt >= 10000) it.classList.add('epic');
+  });
+}
+setTimeout(enhanceFeedItems, 500);
+// re-run when feed scrolls/refreshes
+const feedObserver = new MutationObserver(()=>{
+  clearTimeout(window.__p8FeedT);
+  window.__p8FeedT = setTimeout(enhanceFeedItems, 200);
+});
+setTimeout(()=>{
+  const track = document.querySelector('.feed-track');
+  if (track) feedObserver.observe(track, {childList:true, subtree:true});
+}, 800);
+
+// Toast notifications
+P8.toast = function(message, kind, opts){
+  opts = opts || {};
+  let host = document.getElementById('p8-toast-container');
+  if (!host){
+    host = document.createElement('div');
+    host.id = 'p8-toast-container';
+    document.body.appendChild(host);
+  }
+  const t = document.createElement('div');
+  t.className = 'p8-toast ' + (kind || '');
+  const iconMap = {legendary:'🏆', success:'✅', danger:'⚠️', info:'ℹ️'};
+  const icon = opts.icon || iconMap[kind] || '🎮';
+  t.innerHTML = `<span class="toast-icon">${icon}</span><span class="toast-msg">${message}</span>`;
+  host.appendChild(t);
+  setTimeout(()=>{ t.classList.add('hide'); setTimeout(()=>t.remove(), 350); }, opts.duration || 3200);
+};
+
+/* ─────────────────────────────────────────────────────────────────
+   F6: Mini-games polish — particles + screen-shake helpers
+   ───────────────────────────────────────────────────────────────── */
+P8.shake = function(el){
+  if (!el) return;
+  el.classList.remove('p8-screen-shake');
+  void el.offsetWidth; // reflow
+  el.classList.add('p8-screen-shake');
+  setTimeout(()=>el.classList.remove('p8-screen-shake'), 600);
+};
+
+P8.explode = function(x, y, host){
+  const ex = document.createElement('div');
+  ex.className = 'p8-explosion';
+  ex.style.left = x+'px';
+  ex.style.top = y+'px';
+  (host||document.body).appendChild(ex);
+  // 16 spark particles
+  for (let i=0; i<16; i++){
+    const sp = document.createElement('div');
+    sp.className = 'p8-particle';
+    const sz = 4 + Math.random()*5;
+    sp.style.width = sp.style.height = sz+'px';
+    sp.style.background = ['#ff5028','#ffa028','#ffd028'][Math.floor(Math.random()*3)];
+    sp.style.boxShadow = '0 0 8px currentColor';
+    sp.style.left = x+'px';
+    sp.style.top = y+'px';
+    (host||document.body).appendChild(sp);
+    const ang = (Math.PI*2)*i/16 + Math.random()*.5;
+    const dist = 60 + Math.random()*120;
+    const start = performance.now();
+    requestAnimationFrame(function step(now){
+      const t = (now-start)/700;
+      if (t > 1){ sp.remove(); return; }
+      const e = 1 - Math.pow(1-t, 2);
+      sp.style.transform = `translate(${Math.cos(ang)*dist*e}px, ${Math.sin(ang)*dist*e + 30*t*t}px) scale(${1-t})`;
+      sp.style.opacity = (1-t).toFixed(2);
+      requestAnimationFrame(step);
+    });
+  }
+  setTimeout(()=>ex.remove(), 700);
+};
+
+/* ─────────────────────────────────────────────────────────────────
+   F7: Header logo glitch on hover + balance tween wrap + streak fire
+   ───────────────────────────────────────────────────────────────── */
+function setupLogoGlitch(){
+  const logos = document.querySelectorAll('.logo');
+  logos.forEach(l=>{
+    if (l.dataset.p8init) return;
+    l.dataset.p8init='1';
+    l.dataset.text = l.textContent;
+    l.addEventListener('mouseenter', ()=>l.classList.add('p8-glitching'));
+    l.addEventListener('mouseleave', ()=>l.classList.remove('p8-glitching'));
+  });
+}
+setTimeout(setupLogoGlitch, 300);
+
+// Balance change tween + floater
+let _p8LastBal = null;
+function watchBalance(){
+  const el = document.getElementById('balance-val');
+  if (!el) return;
+  const cur = parseFloat((el.textContent||'0').replace(/\s/g,'').replace(/[^\d.-]/g,'')) || 0;
+  if (_p8LastBal === null){ _p8LastBal = cur; return; }
+  if (cur !== _p8LastBal){
+    const diff = cur - _p8LastBal;
+    el.classList.remove('p8-num-pop');
+    void el.offsetWidth;
+    el.classList.add('p8-num-pop');
+    if (Math.abs(diff) >= 1){
+      const fmt = (diff>0?'+':'') + Math.round(diff).toLocaleString('ru').replace(/\s/g,' ');
+      P8.floater(fmt+' ₽', diff>0?'#00ff88':'#ff5577');
+    }
+    _p8LastBal = cur;
+  }
+}
+setInterval(watchBalance, 250);
+
+// Streak fire (≥7)
+function checkStreak(){
+  const sb = document.querySelector('.streak-badge');
+  if (!sb) return;
+  const m = (sb.textContent||'').match(/(\d+)/);
+  const n = m ? parseInt(m[1]) : 0;
+  if (n >= 7) sb.classList.add('p8-fire');
+  else sb.classList.remove('p8-fire');
+}
+setInterval(checkStreak, 1500);
+
+/* ─────────────────────────────────────────────────────────────────
+   F8: Empty inventory illustration + skeleton screens
+   ───────────────────────────────────────────────────────────────── */
+function enhanceEmptyInventory(){
+  const inv = document.querySelector('#inv-list, .inv-grid, .inventory-content');
+  if (!inv) return;
+  if (inv.children.length === 0 && !inv.querySelector('.p8-empty')){
+    const e = document.createElement('div');
+    e.className = 'p8-empty';
+    e.innerHTML = `
+      <div class="p8-empty-icon">🎁</div>
+      <div class="p8-empty-title">ИНВЕНТАРЬ ПУСТ</div>
+      <div class="p8-empty-text">Открой свой первый кейс — и предметы появятся здесь. Можешь продать их за внутренние ₽ или собрать коллекцию.</div>
+      <button class="p8-empty-cta" onclick="document.querySelector('.tab[data-tab=cases]')?.click()">ОТКРЫТЬ КЕЙС</button>
+    `;
+    inv.appendChild(e);
+  }
+}
+setInterval(enhanceEmptyInventory, 1200);
+
+P8.skeleton = function(host, count){
+  if (!host) return;
+  host.innerHTML = '';
+  for (let i=0; i<(count||3); i++){
+    const s = document.createElement('div');
+    s.className = 'p8-skel p8-skel-card';
+    host.appendChild(s);
+  }
+};
+
+/* ─────────────────────────────────────────────────────────────────
+   F9: Volume slider in settings + audio bars indicator
+   ───────────────────────────────────────────────────────────────── */
+function injectVolumeSlider(){
+  const panel = document.querySelector('.sp-themes')?.closest('.sp-content, .settings-panel, .sp') || document.querySelector('.sp-themes')?.parentElement?.parentElement;
+  if (!panel) return;
+  if (panel.querySelector('#p8-vol')) return;
+  const row = document.createElement('div');
+  row.className = 'p8-vol-row';
+  const vol = Math.round(P8.state.sfxVol*100);
+  row.innerHTML = `
+    <label>ГРОМКОСТЬ <span id="p8-vol-val">${vol}%</span></label>
+    <input type="range" min="0" max="100" value="${vol}" class="p8-vol-slider" id="p8-vol" style="--vp:${vol}%">
+  `;
+  panel.appendChild(row);
+  const slider = row.querySelector('#p8-vol');
+  const valEl = row.querySelector('#p8-vol-val');
+  slider.addEventListener('input', ()=>{
+    const v = parseInt(slider.value);
+    P8.state.sfxVol = v/100;
+    slider.style.setProperty('--vp', v+'%');
+    valEl.textContent = v+'%';
+    localStorage.setItem('hvh_p8_vol', P8.state.sfxVol);
+    if (window.HVH_AUDIO && HVH_AUDIO.master) try{ HVH_AUDIO.master.gain.value = P8.state.sfxVol; }catch(_){}
+  });
+}
+setTimeout(injectVolumeSlider, 800);
+setTimeout(injectVolumeSlider, 2200);
+
+// Apply saved volume to existing HVH_AUDIO
+setTimeout(()=>{
+  if (window.HVH_AUDIO && HVH_AUDIO.master) try{ HVH_AUDIO.master.gain.value = P8.state.sfxVol; }catch(_){}
+}, 1200);
+
+/* ─────────────────────────────────────────────────────────────────
+   F10: Mobile bottom-sheet handle on pay modal
+   ───────────────────────────────────────────────────────────────── */
+function addBottomSheetHandle(){
+  if (window.innerWidth > 768) return;
+  const modal = document.querySelector('#pay-modal > div, #pay-modal .pay-modal-content');
+  if (modal && !modal.querySelector('.p8-sheet-handle')){
+    const h = document.createElement('div');
+    h.className = 'p8-sheet-handle';
+    modal.insertBefore(h, modal.firstChild);
+  }
+}
+const payObs = new MutationObserver(()=>{ setTimeout(addBottomSheetHandle, 50); });
+setTimeout(()=>{
+  const m = document.getElementById('pay-modal');
+  if (m) payObs.observe(m, {childList:true, attributes:true});
+}, 800);
+
+/* ─────────────────────────────────────────────────────────────────
+   HOOKS — monkey-patch existing functions for confetti / cinematic
+   ───────────────────────────────────────────────────────────────── */
+// Hook case opening — confetti on legendary
+function installDropHooks(){
+  // Try to wrap any function that displays the won item
+  const fnNames = ['showOpenResult','showWinModal','openCaseFinish','spinReel','onSpinEnd'];
+  fnNames.forEach(name=>{
+    if (typeof window[name] === 'function' && !window[name].__p8wrap){
+      const orig = window[name];
+      window[name] = function(){
+        const r = orig.apply(this, arguments);
+        try{
+          // Look for legendary rarity badge nearby
+          setTimeout(()=>{
+            const leg = document.querySelector('.won-rarity-badge.rarity-legendary, .rarity-legendary[id*="won"], #won-rarity-badge.rarity-legendary');
+            const epic = document.querySelector('.won-rarity-badge.rarity-epic, #won-rarity-badge.rarity-epic');
+            if (leg){
+              P8.confetti({count:120, colors:['#ffd700','#ff9000','#ff6a00','#fff']});
+              P8.cinematic('LEGENDARY DROP', 2400);
+              P8.toast('Легендарный дроп!', 'legendary');
+              if (P8.state.hapticOn && navigator.vibrate) try{ navigator.vibrate([60,40,60,40,120]); }catch(_){}
+            } else if (epic){
+              P8.confetti({count:60, colors:['#c060ff','#7a5cff','#a040ff']});
+              P8.toast('Эпический дроп!', 'info', {icon:'💎'});
+            }
+          }, 300);
+        }catch(_){}
+        return r;
+      };
+      window[name].__p8wrap = true;
+    }
+  });
+}
+setTimeout(installDropHooks, 800);
+setInterval(installDropHooks, 5000);
+
+// Hook P7.confirm receipt to add confetti for success
+setTimeout(()=>{
+  if (window.P7 && P7.showSuccess && !P7.showSuccess.__p8wrap){
+    const orig = P7.showSuccess;
+    P7.showSuccess = function(){
+      const r = orig.apply(this, arguments);
+      P8.confetti({count:60, y: 80, colors:['#00ff88','#00d4ff','#ffd700']});
+      P8.toast('Оплата прошла успешно', 'success');
+      return r;
+    };
+    P7.showSuccess.__p8wrap = true;
+  }
+}, 1500);
+
+// Watch DOM for any rarity-legendary that newly appears (catch-all)
+const rarityObserver = new MutationObserver((muts)=>{
+  for (const mut of muts){
+    for (const node of mut.addedNodes){
+      if (node.nodeType !== 1) continue;
+      const leg = node.matches?.('.rarity-legendary') ? node : node.querySelector?.('.rarity-legendary');
+      if (leg && leg.closest('.won, [id*="won"], .modal, .open-modal') && !leg.dataset.p8c){
+        leg.dataset.p8c = '1';
+        setTimeout(()=>{
+          P8.confetti({count:100, colors:['#ffd700','#ff9000','#ff6a00','#fff']});
+          if (!document.querySelector('#p8-cinema.show')) P8.cinematic('LEGENDARY DROP', 2200);
+        }, 100);
+      }
+    }
+  }
+});
+setTimeout(()=>rarityObserver.observe(document.body, {childList:true, subtree:true}), 500);
+
+/* ─────────────────────────────────────────────────────────────────
+   Init pinging — give user a hint on first load
+   ───────────────────────────────────────────────────────────────── */
+setTimeout(()=>{
+  if (!localStorage.getItem('hvh_p8_seen')){
+    P8.toast('Phase 8 visuals loaded · 9 themes · animations on', 'info', {icon:'🎨', duration:4500});
+    localStorage.setItem('hvh_p8_seen','1');
+  }
+}, 1800);
+
+// Expose to window for debug
+window.P8 = P8;
+console.log('[P8] visual overhaul module loaded · 10 features');
+})();
+</script>
+<!-- PHASE8_JS_END -->
+
+
+
 
 
 </body>
