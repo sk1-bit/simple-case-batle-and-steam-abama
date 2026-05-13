@@ -2883,6 +2883,8 @@ let balance = 0;
 let inventory = [];
 let stats = {opened:0,spent:0,bestVal:0,bestName:'—'};
 let ownedSubs = [];
+// Expose for Phase 6 (achievements, leaderboard, x5 modal)
+try { window.stats = stats; window.inventory = inventory; } catch(e){}
 
 // ══════════ CASE & ICON LIBRARY ══════════
 const CATEGORIES = {
@@ -3164,6 +3166,8 @@ const CASES = [
     {name:'Sport Vice FN',          icon:'d_diamond',rarity:'legendary', val:52000},
    ]},
 ];
+// Expose for Phase 6 Open x5 modal
+try { window.CASES = CASES; } catch(e){}
 
 let currentCategory = 'all';
 
