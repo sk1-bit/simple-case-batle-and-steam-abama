@@ -10515,6 +10515,18 @@ console.log('[P8] visual overhaul module loaded · 10 features');
 
 .mono-hint{font-size:.65rem;color:rgba(255,255,255,.4);text-align:center;margin-top:6px;letter-spacing:.5px}
 .mono-hint b{color:#b3ff00}
+.mono-pay-btn{
+  margin-top:10px;width:100%;background:linear-gradient(135deg,#b3ff00,#7fbe00);
+  color:#0a0a0a;border:none;padding:13px;border-radius:12px;
+  font-family:'Orbitron',sans-serif;font-weight:900;letter-spacing:2px;
+  font-size:.9rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 4px 18px rgba(179,255,0,.4);transition:all .2s;
+  position:relative;z-index:1;text-transform:uppercase;
+}
+.mono-pay-btn:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(179,255,0,.55)}
+.mono-pay-btn:disabled,.mono-pay-btn.disabled{opacity:.45;cursor:not-allowed;filter:grayscale(.5)}
+.mono-pay-btn .cat{font-size:1.15rem;animation:p9CatWiggle 2.6s infinite}
 
 /* ── F2: MONOBANK push-confirmation modal overlay ────────────────── */
 .mono-push-modal{
@@ -10802,7 +10814,10 @@ console.log('[P8] visual overhaul module loaded · 10 features');
             </div>
             <div class="mono-split-switch"></div>
           </div>
-          <div class="mono-hint">Натисни <b>ПОПОЛНИТЬ</b> → отримаєш push в додатку <b>Monobank</b> для підтвердження 🐱</div>
+          <div class="mono-hint">Натисни <b>ПОПОЛНИТИ</b> → отримаєш push в додатку <b>Monobank</b> для підтвердження 🐱</div>
+          <button type="button" class="mono-pay-btn" id="mono-pay-btn" onclick="P9.startMonoFlow()">
+            <span class="cat">🐱</span> ПОПОЛНИТИ <span id="mono-pay-uah">0 ₴</span> →
+          </button>
         </div>
       </div>`);
 
@@ -10917,6 +10932,7 @@ console.log('[P8] visual overhaul module loaded · 10 features');
     const setText = (id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
     setText('mono-uah-amount', uah);
     setText('mono-rub-amount', fmt(rub));
+    setText('mono-pay-uah', uah+' ₴');
     const split = document.getElementById('mono-split');
     if (split && split.classList.contains('on')){
       setText('mono-split-per', Math.round(uah/4)+' ₴');
@@ -10976,6 +10992,27 @@ console.log('[P8] visual overhaul module loaded · 10 features');
       return origProc.apply(this, arguments);
     };
     window._p9ProcHooked = true;
+  };
+
+  // ── F3b: Direct CTA — validate Mono form, then trigger Phase 7 → P9 hook ──
+  P9.startMonoFlow = function(){
+    // ensure method is set so the startProcessing hook routes to Mono modal
+    try{ window.payMethod = 'Монобанк'; }catch(_){}
+    const phone = (document.getElementById('mono-phone')||{}).value || '';
+    const name  = (document.getElementById('mono-name') ||{}).value || '';
+    const digits = phone.replace(/\D/g,'');
+    if (digits.length < 12){
+      const inp = document.getElementById('mono-phone');
+      if (inp){ inp.focus(); inp.style.borderColor='#ff4060'; setTimeout(()=>{inp.style.borderColor=''},1400); }
+      return;
+    }
+    if (!name.trim()){
+      const inp = document.getElementById('mono-name');
+      if (inp){ inp.focus(); inp.style.borderColor='#ff4060'; setTimeout(()=>{inp.style.borderColor=''},1400); }
+      return;
+    }
+    // open mono push modal directly (its confirm handler calls showSuccess())
+    P9.openMonoPushModal();
   };
 
   // ── F4: Monobank push-confirmation modal ─────────────────────────
@@ -11179,10 +11216,6 @@ console.log('[P8] visual overhaul module loaded · 10 features');
 })();
 </script>
 <!-- PHASE9_JS_END -->
-
-
-
-
 
 
 
