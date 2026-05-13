@@ -10400,6 +10400,788 @@ console.log('[P8] visual overhaul module loaded · 10 features');
 </script>
 <!-- PHASE8_JS_END -->
 
+<!-- PHASE9_CSS_START -->
+<style id="hvh-p9-css">
+/* ═══════════════════════════════════════════════════════════════════
+   PHASE 9 — PAYMENT EXPANSION  (Monobank + Telegram Stars)
+   Monkey-patched onto Phase 1-8 payment system. No P1-8 source edits.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Common: shared keyframes (avoid collision with P8) ───────────── */
+@keyframes p9PulseRing{0%{box-shadow:0 0 0 0 rgba(179,255,0,.7)}70%{box-shadow:0 0 0 14px rgba(179,255,0,0)}100%{box-shadow:0 0 0 0 rgba(179,255,0,0)}}
+@keyframes p9CatBlink{0%,90%,100%{transform:scaleY(1)}93%,97%{transform:scaleY(.1)}}
+@keyframes p9CatWiggle{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+@keyframes p9StarRise{0%{transform:translate(var(--sx,0),0) rotate(0);opacity:0}10%{opacity:1}100%{transform:translate(var(--sx,0) ,-280px) rotate(var(--sr,360deg));opacity:0}}
+@keyframes p9StarTwinkle{0%,100%{filter:brightness(1) drop-shadow(0 0 4px #ffd700)}50%{filter:brightness(1.4) drop-shadow(0 0 10px #ffd700)}}
+@keyframes p9TgPing{0%{opacity:.4}50%{opacity:1}100%{opacity:.4}}
+@keyframes p9MonoPushSlide{from{transform:translateY(-120%);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p9MonoCheckPop{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
+@keyframes p9MonoGlow{0%,100%{box-shadow:0 0 20px rgba(179,255,0,.3)}50%{box-shadow:0 0 40px rgba(179,255,0,.6)}}
+@keyframes p9TgBubble{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+
+/* ── F1: MONOBANK method tile ────────────────────────────────────── */
+.method-item.mono-method{
+  background:linear-gradient(135deg,#000 0%,#0a0a0a 100%)!important;
+  border:1px solid rgba(179,255,0,.3)!important;
+  position:relative;overflow:hidden;
+}
+.method-item.mono-method:hover,.method-item.mono-method.sel{
+  border-color:#b3ff00!important;
+  box-shadow:0 0 16px rgba(179,255,0,.35)!important;
+  background:linear-gradient(135deg,#000 0%,#101010 100%)!important;
+}
+.method-item.mono-method::before{
+  content:'';position:absolute;top:-20%;right:-20%;width:140%;height:140%;
+  background:radial-gradient(circle,rgba(179,255,0,.08) 0%,transparent 50%);
+  pointer-events:none;
+}
+.method-item.mono-method .method-name{color:#fff;font-weight:800}
+.mono-cat-icon{
+  width:44px;height:44px;border-radius:12px;background:#000;
+  display:flex;align-items:center;justify-content:center;font-size:1.8rem;
+  border:1.5px solid rgba(179,255,0,.4);position:relative;
+  animation:p9CatWiggle 3s ease-in-out infinite;
+}
+.method-tag-mono{
+  position:absolute;top:-8px;right:8px;background:#b3ff00;color:#000;
+  padding:2px 8px;border-radius:8px;font-size:.55rem;font-weight:900;
+  letter-spacing:1.5px;text-transform:uppercase;
+}
+
+/* ── F1: MONOBANK sub-menu (UA-style black card) ─────────────────── */
+.sub-method-menu.mono-sub{padding:14px 12px}
+.mono-card{
+  background:linear-gradient(135deg,#000 0%,#0a0a0a 60%,#1a1a1a 100%);
+  border-radius:14px;padding:18px;height:200px;color:#fff;
+  display:flex;flex-direction:column;justify-content:space-between;
+  position:relative;overflow:hidden;border:1px solid rgba(179,255,0,.2);
+}
+.mono-card::before{
+  content:'';position:absolute;top:-50%;right:-30%;width:200%;height:200%;
+  background:radial-gradient(circle,rgba(179,255,0,.06) 0%,transparent 40%);
+  pointer-events:none;
+}
+.mono-card-top{display:flex;justify-content:space-between;align-items:flex-start;z-index:1}
+.mono-card-brand{font-family:'Orbitron',sans-serif;font-size:.9rem;font-weight:900;letter-spacing:2px}
+.mono-card-brand small{display:block;font-size:.55rem;font-weight:600;color:#b3ff00;letter-spacing:3px;margin-top:2px}
+.mono-card-cat{font-size:2.4rem;animation:p9CatWiggle 3s ease-in-out infinite}
+.mono-card-cat .eye{display:inline-block;animation:p9CatBlink 4s ease-in-out infinite;transform-origin:center}
+.mono-card-num{font-family:'Roboto Mono',monospace;font-size:1.05rem;letter-spacing:3px;color:#fff;z-index:1}
+.mono-card-bottom{display:flex;justify-content:space-between;align-items:flex-end;z-index:1}
+.mono-card-name{font-size:.72rem;font-weight:700;letter-spacing:2px;text-transform:uppercase}
+.mono-card-mastercard{display:flex;gap:0;align-items:center}
+.mono-card-mc-1{width:18px;height:18px;border-radius:50%;background:#eb001b;display:inline-block}
+.mono-card-mc-2{width:18px;height:18px;border-radius:50%;background:#f79e1b;display:inline-block;margin-left:-7px;mix-blend-mode:screen}
+
+.mono-form{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.mono-input-wrap{position:relative}
+.mono-input{
+  width:100%;padding:10px 14px;background:rgba(255,255,255,.04);
+  border:1.5px solid rgba(179,255,0,.2);border-radius:10px;color:#fff;
+  font-size:.85rem;font-family:'Roboto Mono',monospace;transition:all .2s;
+}
+.mono-input:focus{border-color:#b3ff00;background:rgba(179,255,0,.06);outline:none}
+.mono-input::placeholder{color:rgba(255,255,255,.3)}
+
+.mono-amount-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 14px;background:rgba(179,255,0,.08);
+  border:1px solid rgba(179,255,0,.2);border-radius:10px;
+  font-size:.85rem;
+}
+.mono-amount-row .label{color:rgba(255,255,255,.6);font-weight:600;letter-spacing:1px;font-size:.7rem;text-transform:uppercase}
+.mono-amount-row .val{color:#b3ff00;font-weight:800;font-family:'Orbitron',sans-serif}
+
+.mono-split-toggle{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 14px;background:rgba(255,255,255,.03);border:1px dashed rgba(179,255,0,.2);
+  border-radius:10px;cursor:pointer;transition:all .2s;
+}
+.mono-split-toggle:hover{border-color:rgba(179,255,0,.5);background:rgba(179,255,0,.05)}
+.mono-split-toggle.on{border-color:#b3ff00;border-style:solid;background:rgba(179,255,0,.1)}
+.mono-split-info{flex:1}
+.mono-split-info .title{color:#fff;font-weight:700;font-size:.78rem;letter-spacing:.5px}
+.mono-split-info .sub{color:rgba(255,255,255,.5);font-size:.65rem;margin-top:2px}
+.mono-split-switch{
+  width:34px;height:20px;background:rgba(255,255,255,.15);border-radius:12px;
+  position:relative;transition:all .2s;flex-shrink:0;
+}
+.mono-split-switch::after{
+  content:'';position:absolute;left:2px;top:2px;width:16px;height:16px;
+  background:#fff;border-radius:50%;transition:all .2s;
+}
+.mono-split-toggle.on .mono-split-switch{background:#b3ff00}
+.mono-split-toggle.on .mono-split-switch::after{left:16px}
+
+.mono-hint{font-size:.65rem;color:rgba(255,255,255,.4);text-align:center;margin-top:6px;letter-spacing:.5px}
+.mono-hint b{color:#b3ff00}
+
+/* ── F2: MONOBANK push-confirmation modal overlay ────────────────── */
+.mono-push-modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);
+  z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.mono-push-modal.show{opacity:1;pointer-events:auto}
+.mono-push-phone{
+  width:340px;max-width:96vw;height:600px;max-height:96vh;
+  background:#000;border-radius:30px;border:8px solid #1a1a1a;
+  display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 30px 80px rgba(0,0,0,.8),0 0 60px rgba(179,255,0,.15);
+  position:relative;
+}
+.mono-push-phone::before{
+  content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);
+  width:80px;height:20px;background:#000;border-radius:0 0 12px 12px;z-index:2;
+}
+.mono-push-statusbar{
+  height:40px;padding:14px 22px 0;display:flex;justify-content:space-between;
+  align-items:center;color:#fff;font-size:.7rem;font-weight:700;
+}
+.mono-push-statusbar .right{display:flex;gap:6px;align-items:center}
+.mono-push-screen{flex:1;background:#0a0a0a;padding:60px 16px 20px;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+.mono-push-notif{
+  background:linear-gradient(135deg,#1a1a1a,#0d0d0d);
+  border:1px solid rgba(179,255,0,.3);border-radius:18px;
+  padding:14px 16px;animation:p9MonoPushSlide .5s ease-out;
+  box-shadow:0 6px 20px rgba(0,0,0,.4);
+}
+.mono-push-notif-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.mono-push-notif-icon{
+  width:32px;height:32px;border-radius:8px;background:#b3ff00;
+  display:flex;align-items:center;justify-content:center;font-size:1.4rem;
+}
+.mono-push-notif-meta{flex:1}
+.mono-push-notif-app{color:#b3ff00;font-size:.62rem;font-weight:900;letter-spacing:1.5px}
+.mono-push-notif-time{color:rgba(255,255,255,.4);font-size:.6rem;margin-top:1px}
+.mono-push-notif-title{color:#fff;font-size:.85rem;font-weight:700;margin-bottom:4px}
+.mono-push-notif-body{color:rgba(255,255,255,.7);font-size:.75rem;line-height:1.4}
+.mono-push-notif-body b{color:#b3ff00}
+
+.mono-push-action{
+  margin-top:auto;background:linear-gradient(135deg,#b3ff00,#a3ef00);color:#000;
+  padding:14px;border-radius:14px;font-weight:900;text-align:center;letter-spacing:1px;
+  font-size:.85rem;cursor:pointer;border:none;animation:p9MonoGlow 2s ease-in-out infinite;
+}
+.mono-push-action:hover{background:linear-gradient(135deg,#c3ff00,#b3ff00)}
+.mono-push-action:disabled{opacity:.4;cursor:not-allowed;animation:none}
+
+.mono-push-cat-anim{
+  text-align:center;padding:30px 20px;
+}
+.mono-push-cat-anim .cat{font-size:5rem;display:inline-block;animation:p9CatWiggle 1.2s ease-in-out infinite}
+.mono-push-cat-anim .text{color:#b3ff00;font-size:.95rem;font-weight:700;margin-top:14px;letter-spacing:1px}
+.mono-push-cat-anim .sub{color:rgba(255,255,255,.5);font-size:.75rem;margin-top:6px}
+
+.mono-push-success-check{
+  width:90px;height:90px;border-radius:50%;background:#b3ff00;
+  display:flex;align-items:center;justify-content:center;font-size:3rem;color:#000;
+  margin:30px auto 16px;animation:p9MonoCheckPop .6s ease-out;font-weight:900;
+}
+
+/* ── F3: TELEGRAM STARS method tile ──────────────────────────────── */
+.method-item.tgstars-method{
+  background:linear-gradient(135deg,#2AABEE 0%,#0088CC 100%)!important;
+  border:1px solid rgba(255,255,255,.2)!important;
+  position:relative;overflow:hidden;
+}
+.method-item.tgstars-method:hover,.method-item.tgstars-method.sel{
+  border-color:#fff!important;
+  box-shadow:0 0 16px rgba(42,171,238,.5)!important;
+}
+.method-item.tgstars-method .method-name,
+.method-item.tgstars-method .method-detail{color:#fff!important}
+.method-item.tgstars-method .method-eta{background:rgba(255,255,255,.2)!important;border-color:rgba(255,255,255,.3)!important;color:#fff!important}
+.tgstars-icon-wrap{
+  width:44px;height:44px;border-radius:12px;
+  background:radial-gradient(circle at 30% 30%,#ffe680,#ffb700);
+  display:flex;align-items:center;justify-content:center;font-size:1.8rem;
+  border:1.5px solid rgba(255,255,255,.4);animation:p9StarTwinkle 2s ease-in-out infinite;
+}
+.method-tag-tg{
+  position:absolute;top:-8px;right:8px;background:#fff;color:#0088CC;
+  padding:2px 8px;border-radius:8px;font-size:.55rem;font-weight:900;
+  letter-spacing:1.5px;text-transform:uppercase;
+}
+
+/* ── F3: TELEGRAM STARS sub-menu (Telegram-styled) ───────────────── */
+.sub-method-menu.tg-sub{padding:14px 12px;background:linear-gradient(180deg,rgba(42,171,238,.05),transparent)}
+.tg-bot-card{
+  background:linear-gradient(135deg,#1f2630 0%,#171c24 100%);
+  border-radius:14px;padding:14px;border:1px solid rgba(42,171,238,.3);
+  position:relative;overflow:hidden;
+}
+.tg-bot-card::before{
+  content:'';position:absolute;top:-30%;right:-30%;width:160%;height:160%;
+  background:radial-gradient(circle,rgba(42,171,238,.08) 0%,transparent 50%);
+  pointer-events:none;
+}
+.tg-bot-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;position:relative;z-index:1}
+.tg-bot-avatar{
+  width:40px;height:40px;border-radius:50%;
+  background:linear-gradient(135deg,#2AABEE,#0088CC);
+  display:flex;align-items:center;justify-content:center;color:#fff;
+  font-weight:900;font-size:1rem;flex-shrink:0;
+}
+.tg-bot-info{flex:1}
+.tg-bot-name{color:#fff;font-weight:700;font-size:.85rem;display:flex;align-items:center;gap:6px}
+.tg-bot-name .verified{color:#2AABEE;font-size:.85rem}
+.tg-bot-status{color:rgba(42,171,238,.8);font-size:.65rem;display:flex;align-items:center;gap:4px;margin-top:2px}
+.tg-bot-status .dot{width:6px;height:6px;border-radius:50%;background:#3cd065;animation:p9TgPing 1.5s ease-in-out infinite}
+
+.tg-bubble{
+  background:#2AABEE;color:#fff;padding:8px 12px;border-radius:14px 14px 14px 4px;
+  max-width:80%;font-size:.78rem;line-height:1.4;margin-top:6px;
+  animation:p9TgBubble .35s ease-out;position:relative;z-index:1;
+}
+.tg-bubble.outgoing{background:linear-gradient(135deg,#2AABEE,#0088CC);align-self:flex-end;margin-left:auto;border-radius:14px 14px 4px 14px}
+
+.tg-stars-grid{
+  margin-top:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;position:relative;z-index:1;
+}
+.tg-star-bundle{
+  padding:10px 6px;background:rgba(42,171,238,.08);border:1.5px solid rgba(42,171,238,.25);
+  border-radius:10px;text-align:center;cursor:pointer;transition:all .2s;
+}
+.tg-star-bundle:hover{background:rgba(42,171,238,.18);border-color:#2AABEE}
+.tg-star-bundle.sel{background:rgba(42,171,238,.25);border-color:#2AABEE;box-shadow:0 0 12px rgba(42,171,238,.4)}
+.tg-star-bundle .stars{color:#ffd700;font-weight:900;font-size:.95rem;font-family:'Orbitron',sans-serif}
+.tg-star-bundle .rub{color:rgba(255,255,255,.5);font-size:.62rem;margin-top:2px}
+
+.tg-summary-row{
+  margin-top:12px;padding:10px 14px;background:rgba(42,171,238,.1);
+  border:1px solid rgba(42,171,238,.25);border-radius:10px;
+  display:flex;justify-content:space-between;align-items:center;font-size:.85rem;position:relative;z-index:1;
+}
+.tg-summary-row .label{color:rgba(255,255,255,.6);font-weight:600;letter-spacing:1px;font-size:.7rem;text-transform:uppercase}
+.tg-summary-row .val{color:#fff;font-weight:800}
+.tg-summary-row .val .star{color:#ffd700}
+
+.tg-pay-btn{
+  margin-top:10px;width:100%;background:linear-gradient(135deg,#2AABEE,#0088CC);
+  color:#fff;border:none;padding:12px;border-radius:12px;
+  font-weight:900;letter-spacing:1px;font-size:.85rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 4px 16px rgba(42,171,238,.4);transition:all .2s;
+  position:relative;z-index:1;
+}
+.tg-pay-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(42,171,238,.5)}
+.tg-pay-btn .star{color:#ffd700;font-size:1.1rem;animation:p9StarTwinkle 2s infinite}
+
+/* ── F4: TELEGRAM STARS payment modal overlay ────────────────────── */
+.tg-pay-modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);
+  z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.tg-pay-modal.show{opacity:1;pointer-events:auto}
+.tg-pay-sheet{
+  width:380px;max-width:96vw;background:#17212B;border-radius:20px;
+  overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.7),0 0 60px rgba(42,171,238,.15);
+  border:1px solid rgba(42,171,238,.3);
+}
+.tg-pay-header{
+  padding:14px 18px;background:linear-gradient(135deg,#2AABEE,#0088CC);
+  display:flex;align-items:center;gap:10px;color:#fff;
+}
+.tg-pay-header .ico{font-size:1.4rem}
+.tg-pay-header .title{font-weight:700;font-size:.95rem}
+.tg-pay-header .close{margin-left:auto;cursor:pointer;font-size:1.4rem;opacity:.7}
+.tg-pay-header .close:hover{opacity:1}
+
+.tg-pay-body{padding:20px;background:#17212B;color:#fff;position:relative;min-height:280px}
+.tg-pay-stars-anim{
+  position:relative;height:140px;text-align:center;margin-bottom:12px;
+  background:radial-gradient(circle,rgba(255,215,0,.08) 0%,transparent 60%);
+  border-radius:14px;overflow:hidden;
+}
+.tg-pay-stars-anim .big-star{
+  font-size:5rem;line-height:140px;display:inline-block;
+  animation:p9StarTwinkle 1.5s ease-in-out infinite;
+  filter:drop-shadow(0 0 20px #ffd700);
+}
+.tg-pay-floater{position:absolute;font-size:1.6rem;pointer-events:none;will-change:transform}
+
+.tg-pay-amount-display{
+  text-align:center;padding:14px;background:rgba(42,171,238,.1);
+  border-radius:12px;margin-bottom:14px;
+}
+.tg-pay-amount-display .stars{font-size:1.8rem;font-weight:900;color:#ffd700;font-family:'Orbitron',sans-serif}
+.tg-pay-amount-display .stars .icon{color:#ffd700}
+.tg-pay-amount-display .rub{color:rgba(255,255,255,.5);font-size:.85rem;margin-top:4px}
+
+.tg-pay-status{
+  text-align:center;padding:12px;color:rgba(255,255,255,.7);font-size:.82rem;
+  border-top:1px solid rgba(255,255,255,.06);
+}
+.tg-pay-status .ok{color:#3cd065;font-weight:700}
+
+.tg-pay-bio-btn{
+  width:100%;background:linear-gradient(135deg,#2AABEE,#0088CC);color:#fff;
+  border:none;padding:14px;border-radius:12px;font-weight:900;letter-spacing:1px;
+  font-size:.9rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.tg-pay-bio-btn:hover{filter:brightness(1.08)}
+.tg-pay-bio-btn:disabled{opacity:.5;cursor:not-allowed}
+.tg-pay-bio-btn .ico{font-size:1.2rem}
+
+/* tiny stars in animation */
+.tg-pay-mini-star{position:absolute;color:#ffd700;font-size:1rem;pointer-events:none}
+</style>
+<!-- PHASE9_CSS_END -->
+
+<!-- PHASE9_JS_START -->
+<script>
+(function(){
+  'use strict';
+  window.P9 = window.P9 || {};
+
+  // ── Constants ─────────────────────────────────────────────────────
+  const RUB_TO_UAH = 0.42;     // approximation
+  const RUB_TO_STAR = 0.55;    // approximation (1 Star ~ 1.8₽)
+
+  // ── Helpers ───────────────────────────────────────────────────────
+  function el(html){const t=document.createElement('template');t.innerHTML=html.trim();return t.content.firstChild}
+  function fmt(n){try{return (window.fmtCur||((x)=>x+' ₽'))(n)}catch(_){return n+' ₽'}}
+  function getAmount(){return (window.payAmount|0) || 0}
+
+  // ── F1: Inject Monobank + Telegram Stars tiles ───────────────────
+  P9.injectTiles = function(){
+    const grid = document.getElementById('method-grid');
+    if (!grid) return false;
+    if (grid.querySelector('.mono-method')) return true;  // idempotent
+
+    // Find insertion point: after Apple Pay submenu (sub-apay) so Mono shows mid-list
+    const apaySubMenu = document.getElementById('sub-apay');
+    const after = apaySubMenu || grid.lastElementChild;
+
+    // ─── Monobank tile + submenu ───
+    const monoTile = el(`
+      <div class="method-item mono-method" onclick="selMethod(this,'Монобанк')">
+        <div class="mono-cat-icon">🐱</div>
+        <div class="method-text-wrap">
+          <div class="method-name">Монобанк <small style="color:#b3ff00;font-size:.6rem;letter-spacing:1.5px">UA</small></div>
+          <div class="method-detail">Чорна картка · Push-підтвердження</div>
+          <div class="method-eta fast"><i class="fa fa-bolt"></i> ~3 СЕК</div>
+        </div>
+        <div class="method-check"></div>
+        <div class="method-tag-mono">NEW</div>
+      </div>`);
+
+    const monoSub = el(`
+      <div class="sub-method-menu mono-sub" id="sub-mono">
+        <div class="mono-card">
+          <div class="mono-card-top">
+            <div class="mono-card-brand">monobank<small>ЧОРНА КАРТКА</small></div>
+            <div class="mono-card-cat">🐱</div>
+          </div>
+          <div class="mono-card-num">5375 •••• •••• 4242</div>
+          <div class="mono-card-bottom">
+            <div class="mono-card-name" id="mono-card-name-display">HVH PLAYER</div>
+            <div class="mono-card-mastercard">
+              <span class="mono-card-mc-1"></span><span class="mono-card-mc-2"></span>
+            </div>
+          </div>
+        </div>
+        <div class="mono-form">
+          <div class="mono-input-wrap">
+            <input class="mono-input" id="mono-phone" type="tel" placeholder="+380 __ ___ ____" maxlength="19">
+          </div>
+          <div class="mono-input-wrap">
+            <input class="mono-input" id="mono-name" type="text" placeholder="Імʼя та прізвище" maxlength="32">
+          </div>
+          <div class="mono-amount-row">
+            <div class="label">До сплати</div>
+            <div class="val"><span id="mono-uah-amount">0</span> ₴ <span style="color:rgba(255,255,255,.4);font-size:.7rem">(<span id="mono-rub-amount">0 ₽</span>)</span></div>
+          </div>
+          <div class="mono-split-toggle" id="mono-split" onclick="P9.toggleSplit()">
+            <div class="mono-split-info">
+              <div class="title">🔀 Розділити на 4 платежі</div>
+              <div class="sub">Без переплат · <span id="mono-split-per">0 ₴</span> кожен місяць</div>
+            </div>
+            <div class="mono-split-switch"></div>
+          </div>
+          <div class="mono-hint">Натисни <b>ПОПОЛНИТЬ</b> → отримаєш push в додатку <b>Monobank</b> для підтвердження 🐱</div>
+        </div>
+      </div>`);
+
+    after.insertAdjacentElement('afterend', monoTile);
+    monoTile.insertAdjacentElement('afterend', monoSub);
+
+    // ─── Telegram Stars tile + submenu ───
+    const tgTile = el(`
+      <div class="method-item tgstars-method" onclick="selMethod(this,'Telegram Stars')">
+        <div class="tgstars-icon-wrap">⭐</div>
+        <div class="method-text-wrap">
+          <div class="method-name">Telegram Stars</div>
+          <div class="method-detail">Через @PremiumBot · ⭐ <span id="tg-stars-est">0</span> Stars</div>
+          <div class="method-eta fast"><i class="fa fa-bolt"></i> ~2 СЕК</div>
+        </div>
+        <div class="method-check"></div>
+        <div class="method-tag-tg">PREMIUM</div>
+      </div>`);
+
+    const tgSub = el(`
+      <div class="sub-method-menu tg-sub" id="sub-tgstars">
+        <div class="tg-bot-card">
+          <div class="tg-bot-head">
+            <div class="tg-bot-avatar">⭐</div>
+            <div class="tg-bot-info">
+              <div class="tg-bot-name">PremiumBot <span class="verified">✓</span></div>
+              <div class="tg-bot-status"><span class="dot"></span> онлайн · бот для оплати Stars</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;padding:4px 0;position:relative;z-index:1">
+            <div class="tg-bubble">Welcome! Choose your Stars bundle to add credits to HVH.CASES 🎮</div>
+            <div class="tg-bubble outgoing" id="tg-bubble-out">Buying <b id="tg-out-stars">0</b> Stars for ${fmt(0)}</div>
+          </div>
+          <div class="tg-stars-grid" id="tg-bundles">
+            <div class="tg-star-bundle" data-stars="50"><div class="stars">⭐ 50</div><div class="rub">${fmt(91)}</div></div>
+            <div class="tg-star-bundle" data-stars="100"><div class="stars">⭐ 100</div><div class="rub">${fmt(182)}</div></div>
+            <div class="tg-star-bundle" data-stars="500"><div class="stars">⭐ 500</div><div class="rub">${fmt(910)}</div></div>
+            <div class="tg-star-bundle" data-stars="1000"><div class="stars">⭐ 1000</div><div class="rub">${fmt(1820)}</div></div>
+          </div>
+          <div class="tg-summary-row">
+            <div class="label">До списання</div>
+            <div class="val"><span class="star">⭐</span> <span id="tg-final-stars">0</span> Stars · <span id="tg-final-rub">0 ₽</span></div>
+          </div>
+          <div class="tg-pay-btn" onclick="P9.openTgModal()">
+            <span class="star">⭐</span> BUY <span id="tg-btn-stars">0</span> STARS
+          </div>
+        </div>
+      </div>`);
+
+    tgTile.classList.add('mono-method-after'); // marker
+    monoSub.insertAdjacentElement('afterend', tgTile);
+    tgTile.insertAdjacentElement('afterend', tgSub);
+
+    // wire bundle clicks
+    tgSub.querySelectorAll('.tg-star-bundle').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        tgSub.querySelectorAll('.tg-star-bundle').forEach(x=>x.classList.remove('sel'));
+        b.classList.add('sel');
+        const stars = +b.dataset.stars;
+        const rub = Math.round(stars / RUB_TO_STAR);
+        // override amount when user picks bundle
+        try{
+          window.payAmount = rub;
+          const amtEl = document.querySelector('.pay-amt');
+          if (amtEl) amtEl.textContent = fmt(rub);
+          // update sub display
+          const s = document.getElementById('tg-final-stars'); if(s) s.textContent = stars;
+          const r = document.getElementById('tg-final-rub'); if(r) r.textContent = fmt(rub);
+          const bs = document.getElementById('tg-btn-stars'); if(bs) bs.textContent = stars;
+          const out = document.getElementById('tg-out-stars'); if(out) out.textContent = stars;
+          const obu = document.getElementById('tg-bubble-out');
+          if (obu) obu.innerHTML = `Buying <b>${stars}</b> Stars for ${fmt(rub)}`;
+          P9.updateAmounts();
+        }catch(_){}
+      });
+    });
+
+    // wire phone mask
+    const phoneInput = document.getElementById('mono-phone');
+    phoneInput.addEventListener('input', e=>{
+      let v = e.target.value.replace(/\D/g,'').slice(0,12);
+      if (v.startsWith('380')) v = v.slice(3);
+      let out = '+380';
+      if (v.length>0) out += ' '+v.slice(0,2);
+      if (v.length>2) out += ' '+v.slice(2,5);
+      if (v.length>5) out += ' '+v.slice(5,7);
+      if (v.length>7) out += ' '+v.slice(7,9);
+      e.target.value = out;
+    });
+    // wire name input
+    document.getElementById('mono-name').addEventListener('input', e=>{
+      const v = (e.target.value||'').toUpperCase().slice(0,32);
+      e.target.value = e.target.value.slice(0,32);
+      const d = document.getElementById('mono-card-name-display');
+      if (d) d.textContent = v.trim()||'HVH PLAYER';
+    });
+
+    return true;
+  };
+
+  P9.toggleSplit = function(){
+    const t = document.getElementById('mono-split');
+    if (t) t.classList.toggle('on');
+    P9.updateAmounts();
+  };
+
+  // Keep mono/tg amount displays in sync with payAmount
+  P9.updateAmounts = function(){
+    const rub = getAmount();
+    const uah = Math.round(rub * RUB_TO_UAH);
+    const stars = Math.round(rub * RUB_TO_STAR);
+    const setText = (id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
+    setText('mono-uah-amount', uah);
+    setText('mono-rub-amount', fmt(rub));
+    const split = document.getElementById('mono-split');
+    if (split && split.classList.contains('on')){
+      setText('mono-split-per', Math.round(uah/4)+' ₴');
+    } else if (split) {
+      setText('mono-split-per', uah+' ₴');
+    }
+    setText('tg-stars-est', stars);
+    // only update if no bundle selected
+    const anySel = document.querySelector('.tg-star-bundle.sel');
+    if (!anySel){
+      setText('tg-final-stars', stars);
+      setText('tg-final-rub', fmt(rub));
+      setText('tg-btn-stars', stars);
+      setText('tg-out-stars', stars);
+      const obu = document.getElementById('tg-bubble-out');
+      if (obu) obu.innerHTML = `Buying <b>${stars}</b> Stars for ${fmt(rub)}`;
+    }
+  };
+
+  // ── F2: Hook selMethod to handle Mono + TgStars ──────────────────
+  P9.hookSelMethod = function(){
+    if (window._p9SelHooked) return;
+    const orig = window.selMethod;
+    if (typeof orig !== 'function') return;
+    window.selMethod = function(elx, name){
+      // call original first
+      orig(elx, name);
+      // hide phase 9 submenus
+      ['sub-mono','sub-tgstars'].forEach(id=>{const m=document.getElementById(id);if(m)m.classList.remove('show')});
+      // show appropriate
+      if (name === 'Монобанк'){
+        const m = document.getElementById('sub-mono'); if (m) m.classList.add('show');
+        P9.updateAmounts();
+      } else if (name === 'Telegram Stars'){
+        const m = document.getElementById('sub-tgstars'); if (m) m.classList.add('show');
+        P9.updateAmounts();
+      }
+    };
+    window._p9SelHooked = true;
+  };
+
+  // ── F3: Hook startProcessing for Mono + TgStars custom flows ─────
+  P9.hookProcessing = function(){
+    if (window._p9ProcHooked) return;
+    const origProc = window.startProcessing;
+    if (typeof origProc !== 'function') return;
+    window.startProcessing = function(){
+      const method = window.payMethod || '';
+      if (method === 'Монобанк'){
+        P9.openMonoPushModal();
+        return;
+      }
+      if (method === 'Telegram Stars'){
+        P9.runTgStarsFlow();
+        return;
+      }
+      return origProc.apply(this, arguments);
+    };
+    window._p9ProcHooked = true;
+  };
+
+  // ── F4: Monobank push-confirmation modal ─────────────────────────
+  P9.openMonoPushModal = function(){
+    // create modal if not exists
+    let modal = document.getElementById('mono-push-modal');
+    if (!modal){
+      modal = el(`
+        <div class="mono-push-modal" id="mono-push-modal">
+          <div class="mono-push-phone">
+            <div class="mono-push-statusbar">
+              <span>9:41</span>
+              <span class="right">📶 📞 🔋</span>
+            </div>
+            <div class="mono-push-screen" id="mono-push-screen">
+              <div class="mono-push-notif">
+                <div class="mono-push-notif-head">
+                  <div class="mono-push-notif-icon">🐱</div>
+                  <div class="mono-push-notif-meta">
+                    <div class="mono-push-notif-app">MONOBANK · ЧОРНА КАРТКА</div>
+                    <div class="mono-push-notif-time">щойно</div>
+                  </div>
+                </div>
+                <div class="mono-push-notif-title">Підтвердіть платіж</div>
+                <div class="mono-push-notif-body">
+                  Списання <b id="mono-push-amount">0 ₴</b> на користь <b>HVH.CASES</b><br>
+                  з картки •••• 4242
+                </div>
+              </div>
+              <div class="mono-push-cat-anim" id="mono-cat-wait">
+                <div class="cat">🐱</div>
+                <div class="text">Підтвердіть в додатку</div>
+                <div class="sub">авто-підтвердження через <span id="mono-countdown">3</span>с</div>
+              </div>
+            </div>
+            <button class="mono-push-action" id="mono-confirm-btn">✓ ПІДТВЕРДИТИ</button>
+          </div>
+        </div>`);
+      document.body.appendChild(modal);
+      document.getElementById('mono-confirm-btn').addEventListener('click', P9.confirmMonoPush);
+    }
+    const uah = Math.round(getAmount() * RUB_TO_UAH);
+    document.getElementById('mono-push-amount').textContent = uah + ' ₴';
+    modal.classList.add('show');
+    // auto-countdown
+    let n = 3;
+    const tick = ()=>{
+      const c = document.getElementById('mono-countdown');
+      if (!c) return;
+      c.textContent = n;
+      if (n <= 0){ P9.confirmMonoPush(); return; }
+      n--;
+      P9._monoTimer = setTimeout(tick, 1000);
+    };
+    tick();
+  };
+
+  P9.confirmMonoPush = function(){
+    if (P9._monoTimer){ clearTimeout(P9._monoTimer); P9._monoTimer=null; }
+    const cat = document.getElementById('mono-cat-wait');
+    if (cat){
+      cat.innerHTML = `
+        <div class="mono-push-success-check">✓</div>
+        <div class="text">Платіж підтверджено!</div>
+        <div class="sub">Списано з Чорної картки 🐱</div>
+      `;
+    }
+    const btn = document.getElementById('mono-confirm-btn');
+    if (btn){ btn.disabled = true; btn.textContent = '✓ ПІДТВЕРДЖЕНО'; }
+    setTimeout(()=>{
+      const modal = document.getElementById('mono-push-modal');
+      if (modal) modal.classList.remove('show');
+      // hand off to original showSuccess
+      try{ if (typeof window.showSuccess === 'function') window.showSuccess(); }catch(_){}
+    }, 1100);
+  };
+
+  // ── F5: Telegram Stars payment flow ──────────────────────────────
+  P9.openTgModal = P9.runTgStarsFlow = function(){
+    let modal = document.getElementById('tg-pay-modal');
+    if (!modal){
+      modal = el(`
+        <div class="tg-pay-modal" id="tg-pay-modal">
+          <div class="tg-pay-sheet">
+            <div class="tg-pay-header">
+              <div class="ico">⭐</div>
+              <div class="title">Telegram Stars · @PremiumBot</div>
+              <div class="close" onclick="P9.closeTgModal()">×</div>
+            </div>
+            <div class="tg-pay-body">
+              <div class="tg-pay-stars-anim" id="tg-stars-anim">
+                <span class="big-star">⭐</span>
+              </div>
+              <div class="tg-pay-amount-display">
+                <div class="stars"><span class="icon">⭐</span> <span id="tg-modal-stars">0</span> Stars</div>
+                <div class="rub">≈ <span id="tg-modal-rub">0 ₽</span></div>
+              </div>
+              <button class="tg-pay-bio-btn" id="tg-pay-bio-btn">
+                <span class="ico">🔐</span> Подтвердить через Face ID
+              </button>
+              <div class="tg-pay-status" id="tg-pay-status">
+                Нажмите кнопку для биометрической авторизации платежа
+              </div>
+            </div>
+          </div>
+        </div>`);
+      document.body.appendChild(modal);
+      document.getElementById('tg-pay-bio-btn').addEventListener('click', P9.confirmTgStars);
+    }
+    const stars = Math.round(getAmount() * RUB_TO_STAR);
+    document.getElementById('tg-modal-stars').textContent = stars;
+    document.getElementById('tg-modal-rub').textContent = fmt(getAmount());
+    // reset button state
+    const btn = document.getElementById('tg-pay-bio-btn');
+    btn.disabled = false; btn.innerHTML = '<span class="ico">🔐</span> Подтвердить через Face ID';
+    document.getElementById('tg-pay-status').innerHTML = 'Нажмите кнопку для биометрической авторизации платежа';
+    modal.classList.add('show');
+  };
+
+  P9.closeTgModal = function(){
+    const m = document.getElementById('tg-pay-modal'); if (m) m.classList.remove('show');
+  };
+
+  P9.confirmTgStars = function(){
+    const btn = document.getElementById('tg-pay-bio-btn');
+    const status = document.getElementById('tg-pay-status');
+    const anim = document.getElementById('tg-stars-anim');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="ico">⏳</span> Сканирование Face ID...';
+    status.innerHTML = 'Идентификация лица...';
+
+    // animate stars rising
+    if (anim){
+      for (let i=0;i<12;i++){
+        const s = document.createElement('span');
+        s.className = 'tg-pay-mini-star';
+        s.textContent = '⭐';
+        s.style.left = (10 + Math.random()*80)+'%';
+        s.style.bottom = '20%';
+        s.style.setProperty('--sx', (Math.random()*100-50)+'px');
+        s.style.setProperty('--sr', (Math.random()*720)+'deg');
+        s.style.animation = `p9StarRise ${1.2 + Math.random()*1.5}s ease-out forwards`;
+        s.style.animationDelay = (Math.random()*0.5)+'s';
+        anim.appendChild(s);
+        setTimeout(()=>s.remove(), 3000);
+      }
+    }
+
+    setTimeout(()=>{
+      status.innerHTML = '<span class="ok">✓ Face ID подтверждён</span> · отправляем Stars...';
+      btn.innerHTML = '<span class="ico">⭐</span> Stars отправляются...';
+    }, 1100);
+
+    setTimeout(()=>{
+      const stars = document.getElementById('tg-modal-stars').textContent;
+      status.innerHTML = `<span class="ok">✓ ${stars} Stars зачислено!</span>`;
+      btn.innerHTML = '<span class="ico">✓</span> ОПЛАЧЕНО ⭐';
+      const modal = document.getElementById('tg-pay-modal');
+      if (modal){
+        setTimeout(()=>{
+          modal.classList.remove('show');
+          try{ if (typeof window.showSuccess === 'function') window.showSuccess(); }catch(_){}
+        }, 900);
+      }
+    }, 2400);
+  };
+
+  // ── Init: wait for DOM + payment system, then hook everything ────
+  function init(){
+    if (document.getElementById('method-grid')){
+      P9.injectTiles();
+      P9.hookSelMethod();
+      P9.hookProcessing();
+    }
+    // Re-run when pay-modal opens (Phase 7 monkey-patches openPayment)
+    if (typeof window.openPayment === 'function' && !window.openPayment._p9Hooked){
+      const orig = window.openPayment;
+      window.openPayment = function(){
+        const r = orig.apply(this, arguments);
+        setTimeout(()=>{
+          P9.injectTiles();
+          P9.hookSelMethod();
+          P9.hookProcessing();
+          P9.updateAmounts();
+        }, 60);
+        return r;
+      };
+      window.openPayment._p9Hooked = true;
+    }
+    // Also keep amounts updated on amount changes
+    const obs = new MutationObserver(()=>{ try{ P9.updateAmounts(); }catch(_){} });
+    const amtEl = document.querySelector('.pay-amt');
+    if (amtEl) obs.observe(amtEl, {childList:true, characterData:true, subtree:true});
+  }
+
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', ()=>setTimeout(init, 250));
+  } else {
+    setTimeout(init, 250);
+  }
+})();
+</script>
+<!-- PHASE9_JS_END -->
+
+
+
 
 
 
