@@ -3532,6 +3532,8 @@ let payAmount = 2500;
 let payMethod = 'Visa / Mastercard';
 let payCardType = 'visa';
 let payCryptoType = 'Bitcoin';
+// Phase 7: bridge to window scope so payment realism module can read
+try { window.payAmount = payAmount; window.payMethod = payMethod; window.payCardType = payCardType; window.payCryptoType = payCryptoType; } catch(e){}
 let currentPayStep = 1;
 let currentCaseId = null;
 let wonItem = null;
@@ -3939,11 +3941,12 @@ const CARD_DESIGNS = {
 function openPayment(amount, label) {
   _payTarget = amount || 2500;
   _payLabel = label || '';
-  payAmount = _payTarget;
+  payAmount = _payTarget; try { window.payAmount = payAmount; } catch(e){}
   currentPayStep = 1;
   payMethod = 'Visa / Mastercard';
   payCardType = 'visa';
   payCryptoType = 'Bitcoin';
+  try { window.payMethod = payMethod; window.payCardType = payCardType; window.payCryptoType = payCryptoType; } catch(e){}
   payPromoPct = 0; payPromoFlat = 0; payPromoCode = '';
 
   const _rate = (typeof CUR_RATES!=='undefined') ? (CUR_RATES[CURRENT_CURRENCY]||1) : 1;
@@ -4014,7 +4017,7 @@ function closePayment() {
 
 function setPayAmount(v, evt) {
   const prev = payAmount;
-  payAmount = v; _payTarget = v;
+  payAmount = v; _payTarget = v; try { window.payAmount = payAmount; } catch(e){}
   const amountEl = document.getElementById('pay-amount-num');
   amountEl.parentElement.classList.remove('tweening'); void amountEl.parentElement.offsetWidth;
   amountEl.parentElement.classList.add('tweening');
@@ -4195,7 +4198,7 @@ function reselectMethod(name) {
 
 function selMethod(el, name) {
   payMethod = name;
-  try { localStorage.setItem('hvh_lastMethod', name); } catch(_) {}
+  try { window.payMethod = payMethod; localStorage.setItem('hvh_lastMethod', name); } catch(_) {}
   document.querySelectorAll('.method-item').forEach(m => m.classList.remove('sel'));
   el.classList.add('sel');
 
@@ -4225,9 +4228,11 @@ function selMethod(el, name) {
 function selSubMethod(el, value, type) {
   if (type === 'card') {
     payCardType = value;
+    try { window.payCardType = payCardType; } catch(e){}
     updateCardPreview();
   } else if (type === 'crypto') {
     payCryptoType = value;
+    try { window.payCryptoType = payCryptoType; } catch(e){}
     updateCryptoPreview();
   }
 
@@ -8060,5 +8065,1576 @@ else setTimeout(initPhase6, 200);
 
 </script>
 <!-- PHASE6_JS_END -->
+
+<!-- PHASE7_CSS_START -->
+<style id="phase7-styles">
+/* ═══════════ PHASE 7 — PAYMENT REALISM ═══════════ */
+
+/* Real card input form */
+.p7-cardform{display:none;flex-direction:column;gap:10px;margin-top:12px;padding:14px;
+  background:linear-gradient(180deg,rgba(0,170,255,.04),rgba(255,255,255,.02));
+  border:1px solid rgba(0,170,255,.18);border-radius:12px}
+.p7-cardform.show{display:flex}
+.p7-cf-row{display:flex;gap:8px;align-items:stretch}
+.p7-cf-field{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+.p7-cf-label{font-size:.6rem;color:var(--frost-dim);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.p7-cf-input-wrap{position:relative;display:flex;align-items:center;background:rgba(2,6,16,.55);
+  border:1.5px solid rgba(0,170,255,.22);border-radius:8px;transition:.2s;overflow:hidden}
+.p7-cf-input-wrap.focus{border-color:#00aaff;box-shadow:0 0 0 3px rgba(0,170,255,.12)}
+.p7-cf-input-wrap.ok{border-color:#00cc77}
+.p7-cf-input-wrap.bad{border-color:#ff3355;animation:p7Shake .25s}
+@keyframes p7Shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.p7-cf-input{flex:1;background:transparent;border:0;color:var(--ice);padding:11px 12px;
+  font-family:'Orbitron',sans-serif;font-size:.85rem;letter-spacing:.05em;outline:none;min-width:0;width:100%}
+.p7-cf-input::placeholder{color:rgba(180,220,255,.25)}
+.p7-cf-brand{padding:0 10px;height:100%;display:flex;align-items:center;background:rgba(255,255,255,.04)}
+.p7-cf-brand img,.p7-cf-brand svg{height:18px;width:auto}
+.p7-cf-bank{font-size:.62rem;color:#00cc77;margin-top:2px;display:none;font-weight:600}
+.p7-cf-bank.show{display:block}
+.p7-cf-err{font-size:.62rem;color:#ff3355;display:none;font-weight:500}
+.p7-cf-err.show{display:block}
+.p7-cf-hint{font-size:.66rem;color:var(--frost-dim);text-align:center;margin-top:6px;line-height:1.4}
+.p7-cf-hint i{color:#00cc77;margin-right:5px}
+
+/* 3D Card flip */
+.p7-cardvis{perspective:1000px;margin-bottom:10px}
+.p7-cardvis-inner{position:relative;width:100%;aspect-ratio:1.586;max-height:200px;
+  transition:transform .6s;transform-style:preserve-3d}
+.p7-cardvis-inner.flipped{transform:rotateY(180deg)}
+.p7-cardvis-face,.p7-cardvis-back{position:absolute;inset:0;backface-visibility:hidden;
+  border-radius:14px;padding:18px;display:flex;flex-direction:column;justify-content:space-between;
+  background:linear-gradient(135deg,#0a3a5c,#1a6298 50%,#2a8acc);
+  box-shadow:0 12px 30px rgba(0,170,255,.25),inset 0 1px 0 rgba(255,255,255,.15)}
+.p7-cardvis-back{transform:rotateY(180deg);background:linear-gradient(135deg,#0a2a3c,#1a4278 50%,#2a5a8c)}
+.p7-cv-brand{position:absolute;top:14px;right:14px;height:24px}
+.p7-cv-brand img{height:100%}
+.p7-cv-chip{width:36px;height:28px;background:linear-gradient(135deg,#d4a44a,#8a6a2a);border-radius:5px;
+  position:relative;overflow:hidden}
+.p7-cv-chip::before{content:"";position:absolute;inset:0;background:
+  linear-gradient(90deg,transparent 28%,rgba(0,0,0,.4) 30%,transparent 32%),
+  linear-gradient(0deg,transparent 28%,rgba(0,0,0,.4) 30%,transparent 32%)}
+.p7-cv-num{font-family:'Orbitron',sans-serif;font-size:1.1rem;letter-spacing:.12em;color:#fff;
+  text-shadow:0 1px 2px rgba(0,0,0,.4);font-weight:600}
+.p7-cv-row{display:flex;justify-content:space-between;align-items:flex-end;font-size:.65rem}
+.p7-cv-lbl{color:rgba(255,255,255,.65);text-transform:uppercase;font-size:.55rem;letter-spacing:.08em;display:block;margin-bottom:2px}
+.p7-cv-val{font-family:'Orbitron',sans-serif;font-size:.78rem;color:#fff;text-transform:uppercase;letter-spacing:.05em}
+.p7-cv-strip{height:38px;background:#0a1820;margin:18px -18px 0}
+.p7-cv-cvv-strip{background:#fff;color:#000;padding:8px 12px;text-align:right;font-family:'Orbitron',sans-serif;
+  font-size:1rem;letter-spacing:.15em;font-weight:700;margin-top:14px;border-radius:3px;min-height:32px}
+
+/* 3DS Modal */
+.p7-3ds-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:900;
+  align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
+.p7-3ds-overlay.open{display:flex}
+.p7-3ds-card{width:100%;max-width:380px;background:#fff;border-radius:16px;overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);animation:p73dsIn .35s cubic-bezier(.16,1,.3,1)}
+@keyframes p73dsIn{from{transform:scale(.85) translateY(20px);opacity:0}to{transform:none;opacity:1}}
+.p7-3ds-bank{padding:18px 22px;display:flex;align-items:center;gap:12px;color:#fff}
+.p7-3ds-bank.tinkoff{background:#ffdd2d;color:#1d1d1d}
+.p7-3ds-bank.sber{background:#21a038}
+.p7-3ds-bank.alfa{background:#ef3124}
+.p7-3ds-bank.vtb{background:#00aaff}
+.p7-3ds-bank.raif{background:#fffe66;color:#1d1d1d}
+.p7-3ds-bank.gazprom{background:#0079c1}
+.p7-3ds-bank.otkr{background:#00aff7}
+.p7-3ds-bank.default{background:#1a1f2e}
+.p7-3ds-bank-logo{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.25);
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.4rem;font-family:'Orbitron',sans-serif}
+.p7-3ds-bank-name{flex:1;font-weight:600;font-size:1rem;letter-spacing:.01em}
+.p7-3ds-bank-sub{font-size:.7rem;opacity:.7;margin-top:2px}
+.p7-3ds-body{padding:24px 26px;color:#1a1a1a}
+.p7-3ds-title{font-size:1.1rem;font-weight:700;margin-bottom:8px;line-height:1.3}
+.p7-3ds-desc{font-size:.83rem;color:#666;line-height:1.5;margin-bottom:18px}
+.p7-3ds-tx{background:#f5f7fa;border-radius:10px;padding:12px 14px;margin-bottom:18px;font-size:.78rem;color:#444}
+.p7-3ds-tx-row{display:flex;justify-content:space-between;padding:3px 0}
+.p7-3ds-tx-row b{color:#000;font-family:'Orbitron',sans-serif}
+.p7-3ds-code-wrap{display:flex;gap:8px;justify-content:center;margin-bottom:14px}
+.p7-3ds-code-digit{width:44px;height:52px;border:2px solid #d0d6e0;border-radius:8px;
+  font-size:1.6rem;font-weight:700;text-align:center;color:#1a1a1a;background:#fff;outline:none;
+  font-family:'Orbitron',sans-serif;transition:.15s}
+.p7-3ds-code-digit:focus{border-color:#00aaff;box-shadow:0 0 0 3px rgba(0,170,255,.15)}
+.p7-3ds-code-digit.filled{border-color:#00aaff;background:#f0f8ff}
+.p7-3ds-timer{text-align:center;font-size:.78rem;color:#888;margin-bottom:14px}
+.p7-3ds-timer b{color:#1a1a1a;font-family:'Orbitron',sans-serif}
+.p7-3ds-timer.expired{color:#ef3124}
+.p7-3ds-actions{display:flex;gap:10px}
+.p7-3ds-btn{flex:1;padding:13px 14px;border:0;border-radius:10px;font-weight:600;font-size:.88rem;
+  cursor:pointer;transition:.2s;font-family:inherit}
+.p7-3ds-btn.cancel{background:#f0f2f5;color:#666}
+.p7-3ds-btn.cancel:hover{background:#e4e7ec}
+.p7-3ds-btn.confirm{background:#00aaff;color:#fff}
+.p7-3ds-btn.confirm:hover{background:#0099ee;box-shadow:0 4px 12px rgba(0,170,255,.4)}
+.p7-3ds-btn.confirm:disabled{background:#cfd6e0;cursor:not-allowed;box-shadow:none}
+.p7-3ds-resend{text-align:center;font-size:.78rem;color:#00aaff;margin-top:10px;cursor:pointer;
+  text-decoration:underline;background:none;border:0;font-family:inherit}
+.p7-3ds-resend:disabled{color:#999;cursor:not-allowed;text-decoration:none}
+.p7-3ds-secured{display:flex;align-items:center;justify-content:center;gap:6px;
+  font-size:.7rem;color:#888;margin-top:14px;padding-top:12px;border-top:1px solid #eee}
+.p7-3ds-secured i{color:#00aa55}
+
+/* СБП — real QR look */
+.p7-sbp-improved{display:flex;flex-direction:column;gap:14px;padding:14px 0}
+.p7-sbp-qr-real{width:200px;height:200px;margin:0 auto;background:#fff;border-radius:14px;padding:8px;
+  box-shadow:0 8px 24px rgba(0,170,255,.18);position:relative}
+.p7-sbp-qr-real canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
+.p7-sbp-qr-logo{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:42px;height:42px;background:#fff;border-radius:8px;padding:4px;
+  display:flex;align-items:center;justify-content:center;border:2px solid #fff}
+.p7-sbp-qr-logo svg{width:100%;height:100%}
+.p7-sbp-timer{font-family:'Orbitron',sans-serif;font-size:.85rem;color:var(--ice);text-align:center}
+.p7-sbp-timer.warn{color:#ff9933}
+.p7-sbp-timer.expired{color:#ff3355}
+.p7-sbp-banks{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px}
+.p7-sbp-bank{background:rgba(255,255,255,.04);border:1px solid rgba(0,170,255,.12);
+  border-radius:8px;padding:6px 4px;text-align:center;font-size:.6rem;color:var(--frost);
+  display:flex;flex-direction:column;align-items:center;gap:3px}
+.p7-sbp-bank-logo{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-weight:800;font-size:.62rem;color:#fff}
+.p7-sbp-status-real{display:flex;align-items:center;justify-content:center;gap:8px;
+  font-size:.78rem;color:var(--frost);font-weight:600;padding:8px;border-radius:8px;
+  background:rgba(0,170,255,.06);border:1px solid rgba(0,170,255,.15)}
+.p7-sbp-status-real .dot{width:8px;height:8px;border-radius:50%;background:#ff9933;
+  box-shadow:0 0 8px #ff9933;animation:p7Pulse 1.5s infinite}
+.p7-sbp-status-real.scanning .dot{background:#00aaff;box-shadow:0 0 8px #00aaff}
+.p7-sbp-status-real.paid .dot{background:#00cc77;box-shadow:0 0 8px #00cc77;animation:none}
+@keyframes p7Pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.p7-sbp-fake-pay-btn{padding:10px;background:rgba(0,170,255,.1);border:1px dashed rgba(0,170,255,.4);
+  border-radius:8px;font-size:.7rem;color:var(--frost);cursor:pointer;text-align:center;
+  text-transform:uppercase;letter-spacing:.05em}
+.p7-sbp-fake-pay-btn:hover{background:rgba(0,170,255,.18)}
+
+/* Crypto wallet QR */
+.p7-crypto-wallet{display:none;flex-direction:column;gap:12px;padding:14px;
+  background:linear-gradient(180deg,rgba(247,147,26,.04),rgba(247,147,26,.02));
+  border:1px solid rgba(247,147,26,.2);border-radius:12px;margin-top:10px}
+.p7-crypto-wallet.show{display:flex}
+.p7-cw-qr{width:180px;height:180px;margin:0 auto;background:#fff;border-radius:12px;padding:6px}
+.p7-cw-qr canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
+.p7-cw-addr-wrap{display:flex;gap:6px;align-items:stretch}
+.p7-cw-addr{flex:1;background:rgba(2,6,16,.55);border:1px solid rgba(247,147,26,.22);
+  border-radius:8px;padding:10px 12px;color:var(--ice);font-family:'Orbitron',sans-serif;
+  font-size:.7rem;letter-spacing:.02em;word-break:break-all;line-height:1.4}
+.p7-cw-copy{padding:0 14px;background:rgba(247,147,26,.15);border:1px solid rgba(247,147,26,.4);
+  border-radius:8px;color:#f7931a;cursor:pointer;font-weight:600;font-size:.75rem}
+.p7-cw-copy:hover{background:rgba(247,147,26,.25)}
+.p7-cw-copy.copied{background:rgba(0,204,119,.18);border-color:#00cc77;color:#00cc77}
+.p7-cw-net-info{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.p7-cw-net-row{background:rgba(2,6,16,.55);border-radius:8px;padding:8px 10px;font-size:.7rem;
+  border:1px solid rgba(247,147,26,.15)}
+.p7-cw-net-row .lbl{color:var(--frost-dim);font-size:.6rem;text-transform:uppercase;display:block;margin-bottom:3px}
+.p7-cw-net-row .val{color:var(--ice);font-family:'Orbitron',sans-serif;font-size:.78rem}
+.p7-cw-timer{font-family:'Orbitron',sans-serif;text-align:center;font-size:.85rem;color:#f7931a;
+  padding:8px;background:rgba(247,147,26,.06);border:1px solid rgba(247,147,26,.18);border-radius:8px}
+.p7-cw-confirm-btn{padding:11px;background:rgba(247,147,26,.15);border:1px solid #f7931a;
+  border-radius:8px;color:#f7931a;font-weight:700;cursor:pointer;font-size:.78rem;letter-spacing:.05em}
+.p7-cw-confirm-btn:hover{background:rgba(247,147,26,.25)}
+
+/* ЮMoney login */
+.p7-yoo-form{display:none;flex-direction:column;gap:10px;padding:14px;
+  background:linear-gradient(180deg,rgba(140,90,200,.05),rgba(140,90,200,.02));
+  border:1px solid rgba(140,90,200,.22);border-radius:12px;margin-top:10px}
+.p7-yoo-form.show{display:flex}
+.p7-yoo-logo{text-align:center;font-family:'Orbitron',sans-serif;font-weight:800;font-size:1.1rem;
+  color:#fff;letter-spacing:.05em;padding:8px;background:#8c5ac8;border-radius:8px}
+.p7-yoo-balance{text-align:center;padding:10px;background:rgba(2,6,16,.5);border-radius:8px;display:none}
+.p7-yoo-balance.show{display:block}
+.p7-yoo-balance-val{font-family:'Orbitron',sans-serif;font-size:1.3rem;color:#fff;font-weight:700}
+.p7-yoo-balance-lbl{font-size:.65rem;color:var(--frost-dim);text-transform:uppercase;letter-spacing:.05em;margin-top:3px}
+
+/* Decline message */
+.p7-decline{display:none;flex-direction:column;gap:14px;align-items:center;padding:30px 20px;text-align:center}
+.p7-decline.show{display:flex}
+.p7-decline-icon{font-size:3.5rem;color:#ff3355;animation:p7DeclineShake .5s}
+@keyframes p7DeclineShake{0%,100%{transform:scale(1)}25%{transform:scale(1.1) rotate(-5deg)}75%{transform:scale(1.1) rotate(5deg)}}
+.p7-decline-title{font-family:'Orbitron',sans-serif;color:#ff3355;font-size:1.2rem;font-weight:700;letter-spacing:.05em}
+.p7-decline-msg{color:var(--frost-dim);font-size:.85rem;line-height:1.5;max-width:300px}
+.p7-decline-code{font-family:'Orbitron',sans-serif;color:var(--frost-dim);font-size:.7rem;letter-spacing:.05em;
+  padding:6px 12px;background:rgba(255,51,85,.08);border:1px solid rgba(255,51,85,.2);border-radius:6px}
+.p7-decline-actions{display:flex;gap:10px;width:100%;max-width:300px;margin-top:10px}
+.p7-decline-btn{flex:1;padding:11px;border:0;border-radius:10px;font-weight:600;cursor:pointer;font-family:inherit;font-size:.82rem}
+.p7-decline-btn.retry{background:#00aaff;color:#fff}
+.p7-decline-btn.cancel{background:rgba(255,255,255,.06);color:var(--frost)}
+
+/* Receipt modal */
+.p7-rcpt-overlay{display:none;position:fixed;inset:0;background:rgba(2,6,16,.92);z-index:850;
+  align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(10px)}
+.p7-rcpt-overlay.open{display:flex}
+.p7-rcpt{width:100%;max-width:380px;background:linear-gradient(180deg,#fff,#f5f7fa);border-radius:14px;
+  padding:24px;color:#1a1a1a;box-shadow:0 20px 60px rgba(0,170,255,.3);max-height:90vh;overflow-y:auto;
+  animation:p7RcptIn .4s cubic-bezier(.16,1,.3,1);position:relative;
+  background-image:repeating-linear-gradient(90deg,transparent 0,transparent 11px,rgba(0,0,0,.025) 11px,rgba(0,0,0,.025) 12px)}
+@keyframes p7RcptIn{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.p7-rcpt-head{text-align:center;border-bottom:1.5px dashed #aaa;padding-bottom:14px;margin-bottom:14px}
+.p7-rcpt-brand{font-family:'Orbitron',sans-serif;font-weight:800;font-size:1.2rem;color:#0a3a5c;letter-spacing:.05em}
+.p7-rcpt-sub{font-size:.72rem;color:#777;margin-top:2px;letter-spacing:.02em}
+.p7-rcpt-row{display:flex;justify-content:space-between;padding:6px 0;font-size:.82rem;line-height:1.4}
+.p7-rcpt-row .lbl{color:#666}
+.p7-rcpt-row .val{color:#1a1a1a;font-weight:600;text-align:right;font-family:'Orbitron',sans-serif;font-size:.75rem;letter-spacing:.02em}
+.p7-rcpt-total{border-top:1.5px dashed #aaa;margin-top:10px;padding-top:10px;font-weight:700;font-size:.95rem}
+.p7-rcpt-total .val{color:#0a3a5c;font-size:1rem}
+.p7-rcpt-status{display:inline-block;padding:3px 9px;border-radius:14px;background:#00cc77;color:#fff;
+  font-size:.65rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.p7-rcpt-footer{margin-top:18px;padding-top:14px;border-top:1.5px dashed #aaa;text-align:center;font-size:.65rem;color:#999;line-height:1.5}
+.p7-rcpt-actions{display:flex;gap:8px;margin-top:14px}
+.p7-rcpt-btn{flex:1;padding:11px;border:0;border-radius:9px;font-weight:600;font-size:.78rem;cursor:pointer;
+  font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px}
+.p7-rcpt-btn.pdf{background:#ef3124;color:#fff}
+.p7-rcpt-btn.email{background:#0079c1;color:#fff}
+.p7-rcpt-btn.close{background:#1a1f2e;color:#fff}
+.p7-rcpt-close{position:absolute;top:10px;right:14px;width:32px;height:32px;border-radius:50%;
+  background:rgba(0,0,0,.06);border:0;font-size:1.4rem;cursor:pointer;color:#666;line-height:1}
+
+/* Transaction history */
+.p7-hist-wrap{display:flex;flex-direction:column;gap:10px;padding:10px 0}
+.p7-hist-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+@media (max-width:560px){.p7-hist-stats{grid-template-columns:repeat(2,1fr)}}
+.p7-hist-stat{background:linear-gradient(135deg,rgba(0,170,255,.06),rgba(0,170,255,.02));
+  border:1px solid rgba(0,170,255,.16);border-radius:10px;padding:12px;text-align:center}
+.p7-hist-stat .v{font-family:'Orbitron',sans-serif;font-size:1rem;color:var(--ice);font-weight:700}
+.p7-hist-stat .l{font-size:.6rem;color:var(--frost-dim);text-transform:uppercase;margin-top:3px;letter-spacing:.05em}
+.p7-hist-filters{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.p7-hist-filter{padding:6px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(0,170,255,.15);
+  border-radius:16px;font-size:.7rem;color:var(--frost);cursor:pointer;transition:.2s;font-family:inherit}
+.p7-hist-filter.active{background:rgba(0,170,255,.18);border-color:#00aaff;color:var(--ice)}
+.p7-hist-empty{padding:40px 20px;text-align:center;color:var(--frost-dim)}
+.p7-hist-empty i{font-size:2.5rem;display:block;margin-bottom:10px;opacity:.3}
+.p7-hist-list{display:flex;flex-direction:column;gap:6px;max-height:600px;overflow-y:auto;padding-right:4px}
+.p7-hist-item{display:grid;grid-template-columns:auto 1fr auto;gap:10px;padding:12px;
+  background:rgba(255,255,255,.025);border:1px solid rgba(0,170,255,.1);border-radius:10px;
+  cursor:pointer;transition:.2s;align-items:center}
+.p7-hist-item:hover{background:rgba(0,170,255,.06);border-color:rgba(0,170,255,.3);transform:translateX(2px)}
+.p7-hist-item-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;background:rgba(0,170,255,.1)}
+.p7-hist-item-icon.declined{background:rgba(255,51,85,.1);color:#ff3355}
+.p7-hist-item-info{min-width:0}
+.p7-hist-item-method{font-size:.85rem;color:var(--ice);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p7-hist-item-time{font-size:.66rem;color:var(--frost-dim);margin-top:2px}
+.p7-hist-item-amount{font-family:'Orbitron',sans-serif;font-weight:700;font-size:.92rem;color:#00cc77;text-align:right;white-space:nowrap}
+.p7-hist-item-amount.declined{color:#ff3355;text-decoration:line-through}
+
+/* Header animation */
+.p7-section-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.p7-section-header h2{margin:0;font-family:'Orbitron',sans-serif;color:var(--ice);font-size:1.1rem;letter-spacing:.05em}
+.p7-section-header .badge{background:rgba(0,170,255,.18);color:var(--ice);padding:3px 10px;border-radius:14px;font-size:.65rem;font-weight:700;letter-spacing:.05em}
+
+/* Toast slide */
+.p7-pay-success-toast{position:fixed;top:90px;right:20px;z-index:950;display:none;
+  background:linear-gradient(135deg,#00cc77,#00aa55);color:#fff;border-radius:12px;
+  padding:14px 18px;box-shadow:0 8px 24px rgba(0,204,119,.4);max-width:320px;
+  animation:p7ToastIn .35s cubic-bezier(.16,1,.3,1)}
+.p7-pay-success-toast.show{display:block}
+@keyframes p7ToastIn{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+.p7-pay-success-toast b{display:block;font-size:1rem;margin-bottom:3px}
+.p7-pay-success-toast small{font-size:.72rem;opacity:.9}
+
+/* Mobile adjustments */
+@media (max-width:560px){
+  .p7-3ds-card{max-width:100%}
+  .p7-3ds-body{padding:18px 20px}
+  .p7-3ds-code-digit{width:38px;height:46px;font-size:1.4rem}
+  .p7-cf-row{flex-direction:column;gap:8px}
+  .p7-rcpt{padding:18px;max-width:96vw}
+  .p7-cardvis-inner{max-height:170px}
+  .p7-cv-num{font-size:.95rem}
+}
+</style>
+<!-- PHASE7_CSS_END -->
+
+<!-- PHASE7_HTML_START -->
+<!-- 3D-Secure Modal -->
+<div class="p7-3ds-overlay" id="p7-3ds-overlay">
+  <div class="p7-3ds-card">
+    <div class="p7-3ds-bank" id="p7-3ds-bank">
+      <div class="p7-3ds-bank-logo" id="p7-3ds-bank-logo">T</div>
+      <div>
+        <div class="p7-3ds-bank-name" id="p7-3ds-bank-name">Тинькофф Банк</div>
+        <div class="p7-3ds-bank-sub">3-D Secure · Подтверждение операции</div>
+      </div>
+    </div>
+    <div class="p7-3ds-body">
+      <div class="p7-3ds-title">Подтвердите оплату</div>
+      <div class="p7-3ds-desc">На номер телефона <b id="p7-3ds-phone">+7 (***) ***-12-34</b> отправлено SMS с кодом подтверждения. Введите 6-значный код ниже.</div>
+      <div class="p7-3ds-tx" id="p7-3ds-tx">
+        <div class="p7-3ds-tx-row"><span>Получатель</span><b>HVH.CASES</b></div>
+        <div class="p7-3ds-tx-row"><span>Сумма</span><b id="p7-3ds-amount">2 500 ₽</b></div>
+        <div class="p7-3ds-tx-row"><span>Карта</span><b id="p7-3ds-card-last4">•••• 2498</b></div>
+      </div>
+      <div class="p7-3ds-code-wrap" id="p7-3ds-code-wrap">
+        <input class="p7-3ds-code-digit" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input class="p7-3ds-code-digit" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input class="p7-3ds-code-digit" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input class="p7-3ds-code-digit" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input class="p7-3ds-code-digit" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input class="p7-3ds-code-digit" maxlength="1" inputmode="numeric" pattern="[0-9]">
+      </div>
+      <div class="p7-3ds-timer" id="p7-3ds-timer">Код действителен <b id="p7-3ds-timer-val">2:00</b></div>
+      <div class="p7-3ds-actions">
+        <button class="p7-3ds-btn cancel" onclick="P7.close3DS()">Отмена</button>
+        <button class="p7-3ds-btn confirm" id="p7-3ds-confirm" onclick="P7.confirm3DS()" disabled>Подтвердить</button>
+      </div>
+      <button class="p7-3ds-resend" id="p7-3ds-resend" onclick="P7.resend3DS()" disabled>Запросить новый код</button>
+      <div class="p7-3ds-secured">
+        <i class="fa fa-lock"></i> Защищено протоколом 3-D Secure 2.0
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Receipt Modal -->
+<div class="p7-rcpt-overlay" id="p7-rcpt-overlay">
+  <div class="p7-rcpt" id="p7-rcpt">
+    <button class="p7-rcpt-close" onclick="P7.closeReceipt()">×</button>
+    <div class="p7-rcpt-head">
+      <div class="p7-rcpt-brand">HVH.CASES</div>
+      <div class="p7-rcpt-sub">КАССОВЫЙ ЧЕК · ПРИХОД</div>
+      <div style="margin-top:10px"><span class="p7-rcpt-status">✓ Успешно</span></div>
+    </div>
+    <div id="p7-rcpt-body"></div>
+    <div class="p7-rcpt-actions">
+      <button class="p7-rcpt-btn pdf" onclick="P7.downloadReceipt()"><i class="fa fa-file-pdf"></i> PDF</button>
+      <button class="p7-rcpt-btn email" onclick="P7.emailReceipt()"><i class="fa fa-envelope"></i> Email</button>
+      <button class="p7-rcpt-btn close" onclick="P7.closeReceipt()">Закрыть</button>
+    </div>
+    <div class="p7-rcpt-footer">
+      Сформировано: <span id="p7-rcpt-genat"></span><br>
+      ФНС РФ · ОФД · АО «Платформа ОФД» · 1234567890<br>
+      Это симуляция чека для демо
+    </div>
+  </div>
+</div>
+
+<!-- Payment Success Toast -->
+<div class="p7-pay-success-toast" id="p7-pay-success-toast">
+  <b id="p7-pay-toast-title">Платёж зачислен</b>
+  <small id="p7-pay-toast-sub">+2 500 ₽ на баланс</small>
+</div>
+<!-- PHASE7_HTML_END -->
+
+<!-- PHASE7_JS_START -->
+<script>
+// ═══════════ PHASE 7 — PAYMENT REALISM ═══════════
+(function(){
+'use strict';
+
+const P7 = {};
+window.P7 = P7;
+
+// ───────── State ─────────
+P7.state = {
+  cardNumber: '',
+  cardExp: '',
+  cardCvv: '',
+  cardBrand: null,
+  cardBank: null,
+  threeDSCode: '',
+  threeDSResolve: null,
+  threeDSTimer: null,
+  threeDSTimeLeft: 120,
+  threeDSResendTimeLeft: 30,
+  threeDSResendTimer: null,
+  sbpTimer: null,
+  sbpTimeLeft: 300,
+  cryptoTimer: null,
+  cryptoTimeLeft: 1800,
+  declineMode: null, // for testing
+};
+
+// ───────── Card Brand Detection ─────────
+P7.detectBrand = function(num){
+  const n = num.replace(/\D/g,'');
+  if (!n) return null;
+  if (/^4/.test(n)) return {brand:'visa', name:'Visa', cvvLen:3, gap:[4,8,12]};
+  if (/^(5[1-5]|2[2-7])/.test(n)) return {brand:'mastercard', name:'Mastercard', cvvLen:3, gap:[4,8,12]};
+  if (/^(34|37)/.test(n)) return {brand:'amex', name:'American Express', cvvLen:4, gap:[4,10]};
+  if (/^220[0-4]/.test(n)) return {brand:'mir', name:'МИР', cvvLen:3, gap:[4,8,12]};
+  if (/^62/.test(n)) return {brand:'unionpay', name:'UnionPay', cvvLen:3, gap:[4,8,12]};
+  if (/^35/.test(n)) return {brand:'jcb', name:'JCB', cvvLen:3, gap:[4,8,12]};
+  if (/^(50|56|57|58|6\d)/.test(n)) return {brand:'maestro', name:'Maestro', cvvLen:3, gap:[4,8,12]};
+  return null;
+};
+
+// ───────── Bank Detection (Russian BINs, simplified) ─────────
+P7.detectBank = function(num){
+  const bin6 = num.replace(/\D/g,'').slice(0,6);
+  if (!bin6 || bin6.length<6) return null;
+  const banks = {
+    '427234':{n:'Сбербанк',c:'sber'}, '427229':{n:'Сбербанк',c:'sber'},
+    '427901':{n:'Сбербанк',c:'sber'}, '546918':{n:'Сбербанк',c:'sber'},
+    '548673':{n:'Сбербанк',c:'sber'}, '676280':{n:'Сбербанк',c:'sber'},
+    '521178':{n:'Сбербанк',c:'sber'}, '481776':{n:'Сбербанк',c:'sber'},
+    '437773':{n:'Тинькофф',c:'tinkoff'}, '521324':{n:'Тинькофф',c:'tinkoff'},
+    '518901':{n:'Тинькофф',c:'tinkoff'}, '553691':{n:'Тинькофф',c:'tinkoff'},
+    '533669':{n:'Тинькофф',c:'tinkoff'}, '548999':{n:'Тинькофф',c:'tinkoff'},
+    '220070':{n:'Тинькофф',c:'tinkoff'},
+    '415482':{n:'Альфа-Банк',c:'alfa'}, '548601':{n:'Альфа-Банк',c:'alfa'},
+    '410621':{n:'Альфа-Банк',c:'alfa'}, '521324':{n:'Альфа-Банк',c:'alfa'},
+    '477964':{n:'ВТБ',c:'vtb'}, '427714':{n:'ВТБ',c:'vtb'},
+    '518823':{n:'ВТБ',c:'vtb'}, '548966':{n:'ВТБ',c:'vtb'},
+    '462730':{n:'Райффайзенбанк',c:'raif'}, '459235':{n:'Райффайзенбанк',c:'raif'},
+    '676459':{n:'Газпромбанк',c:'gazprom'}, '548681':{n:'Газпромбанк',c:'gazprom'},
+    '545452':{n:'Открытие',c:'otkr'}, '430002':{n:'Открытие',c:'otkr'},
+    '220020':{n:'МИР Сбербанк',c:'sber'}, '220011':{n:'МИР Тинькофф',c:'tinkoff'},
+  };
+  // Try 6-digit BIN
+  if (banks[bin6]) return banks[bin6];
+  // Try 4-digit BIN prefixes (broader fallback)
+  const bin4 = bin6.slice(0,4);
+  const prefixMap = {
+    '4272':{n:'Сбербанк',c:'sber'}, '4276':{n:'Сбербанк',c:'sber'}, '4279':{n:'Сбербанк',c:'sber'},
+    '4377':{n:'Тинькофф',c:'tinkoff'}, '5213':{n:'Тинькофф',c:'tinkoff'},
+    '4154':{n:'Альфа-Банк',c:'alfa'}, '4106':{n:'Альфа-Банк',c:'alfa'},
+    '4779':{n:'ВТБ',c:'vtb'}, '4277':{n:'ВТБ',c:'vtb'},
+    '4627':{n:'Райффайзенбанк',c:'raif'},
+    '6764':{n:'Газпромбанк',c:'gazprom'},
+    '5454':{n:'Открытие',c:'otkr'},
+    '2200':{n:'МИР Карта',c:'default'},
+  };
+  return prefixMap[bin4] || null;
+};
+
+// ───────── Luhn ─────────
+P7.luhn = function(num){
+  const n = num.replace(/\D/g,'');
+  if (n.length < 13) return false;
+  let sum = 0, dbl = false;
+  for (let i = n.length - 1; i >= 0; i--){
+    let d = +n[i];
+    if (dbl) { d *= 2; if (d > 9) d -= 9; }
+    sum += d;
+    dbl = !dbl;
+  }
+  return sum % 10 === 0;
+};
+
+// ───────── Format card number ─────────
+P7.formatCardNum = function(num){
+  const brand = P7.detectBrand(num);
+  const n = num.replace(/\D/g,'').slice(0, 19);
+  const gaps = brand ? brand.gap : [4,8,12];
+  let out = '';
+  for (let i = 0; i < n.length; i++){
+    if (gaps.includes(i)) out += ' ';
+    out += n[i];
+  }
+  return out;
+};
+
+// ───────── Brand SVG logos ─────────
+P7.brandLogos = {
+  visa: '<svg viewBox="0 0 36 12" width="36"><text x="0" y="10" font-family="Arial" font-weight="900" font-size="11" fill="#1A1F71" letter-spacing="-.5">VISA</text></svg>',
+  mastercard: '<svg viewBox="0 0 36 20" width="36"><circle cx="14" cy="10" r="8" fill="#EB001B"/><circle cx="22" cy="10" r="8" fill="#F79E1B"/><path d="M18 4 a8 8 0 0 0 0 12 a8 8 0 0 0 0 -12" fill="#FF5F00"/></svg>',
+  mir: '<svg viewBox="0 0 40 14" width="40"><rect x="0" y="0" width="40" height="14" fill="#0F754E" rx="2"/><text x="6" y="10" font-family="Arial" font-weight="700" font-size="9" fill="#fff">MIR</text></svg>',
+  amex: '<svg viewBox="0 0 36 14" width="36"><rect x="0" y="0" width="36" height="14" fill="#006FCF" rx="2"/><text x="3" y="10" font-family="Arial" font-weight="700" font-size="6.5" fill="#fff">AMEX</text></svg>',
+  maestro: '<svg viewBox="0 0 36 20" width="36"><circle cx="14" cy="10" r="8" fill="#0099DF"/><circle cx="22" cy="10" r="8" fill="#ED0006"/><path d="M18 4 a8 8 0 0 0 0 12 a8 8 0 0 0 0 -12" fill="#6C6BBD"/></svg>',
+  unionpay: '<svg viewBox="0 0 36 14" width="36"><text x="0" y="10" font-family="Arial" font-weight="700" font-size="6" fill="#E21836">UNION</text><text x="0" y="14" font-family="Arial" font-weight="700" font-size="6" fill="#00477F">PAY</text></svg>',
+  jcb: '<svg viewBox="0 0 36 14" width="36"><rect x="0" y="0" width="12" height="14" fill="#0F549E"/><rect x="12" y="0" width="12" height="14" fill="#BF152B"/><rect x="24" y="0" width="12" height="14" fill="#2E8B47"/><text x="3" y="10" font-family="Arial" font-weight="700" font-size="7" fill="#fff">JCB</text></svg>',
+};
+
+// ───────── Transaction store ─────────
+P7.tx = {
+  list(){ try { return JSON.parse(localStorage.getItem('hvh_txs_v1')||'[]'); } catch(e){ return []; } },
+  add(t){
+    const arr = this.list();
+    arr.unshift(t);
+    try { localStorage.setItem('hvh_txs_v1', JSON.stringify(arr.slice(0,500))); } catch(e){}
+    if (typeof P7.renderHistory === 'function') P7.renderHistory();
+  },
+  genId(){
+    const d = new Date();
+    return 'HVH-' + d.getTime().toString(36).toUpperCase().slice(-8);
+  },
+  genRrn(){
+    let s = '';
+    for (let i = 0; i < 12; i++) s += Math.floor(Math.random()*10);
+    return s;
+  }
+};
+
+// ───────── Real-looking QR generator (canvas-based pseudo QR) ─────────
+P7.drawQR = function(canvas, text, opts){
+  opts = opts || {};
+  const ctx = canvas.getContext('2d');
+  const size = canvas.width = canvas.height = opts.size || 200;
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0,0,size,size);
+  // Pseudo-random grid based on text hash
+  let hash = 0;
+  for (let i = 0; i < text.length; i++){ hash = ((hash<<5) - hash + text.charCodeAt(i))|0; }
+  const grid = opts.grid || 33;
+  const cell = size/grid;
+  ctx.fillStyle = opts.color || '#000';
+  let seed = Math.abs(hash);
+  function rand(){ seed = (seed*9301 + 49297) % 233280; return seed/233280; }
+  for (let y = 0; y < grid; y++){
+    for (let x = 0; x < grid; x++){
+      if (rand() < 0.45){
+        ctx.fillRect(x*cell, y*cell, cell, cell);
+      }
+    }
+  }
+  // Position markers (corners)
+  const m = cell*7;
+  function marker(px, py){
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(px-2, py-2, m+4, m+4);
+    ctx.fillStyle = opts.color || '#000';
+    ctx.fillRect(px, py, m, m);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(px+cell, py+cell, m-cell*2, m-cell*2);
+    ctx.fillStyle = opts.color || '#000';
+    ctx.fillRect(px+cell*2, py+cell*2, m-cell*4, m-cell*4);
+  }
+  marker(0, 0);
+  marker(size-m, 0);
+  marker(0, size-m);
+  // Alignment marker (bottom-right)
+  const a = cell*5;
+  const ax = size - a - cell*2, ay = size - a - cell*2;
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(ax-1, ay-1, a+2, a+2);
+  ctx.fillStyle = opts.color || '#000';
+  ctx.fillRect(ax, ay, a, a);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(ax+cell, ay+cell, a-cell*2, a-cell*2);
+  ctx.fillStyle = opts.color || '#000';
+  ctx.fillRect(ax+cell*2, ay+cell*2, a-cell*4, a-cell*4);
+};
+
+// ───────── Format helpers ─────────
+P7.fmtAmount = function(n){
+  return new Intl.NumberFormat('ru-RU').format(Math.round(n)) + ' ₽';
+};
+P7.fmtDate = function(d){
+  d = d || new Date();
+  return d.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+};
+
+// ───────── 3D Secure Modal ─────────
+P7.show3DS = function(){
+  return new Promise(function(resolve){
+    P7.state.threeDSResolve = resolve;
+    const ov = document.getElementById('p7-3ds-overlay');
+    const bank = P7.state.cardBank || {n:'Банк-эмитент', c:'default'};
+    const last4 = P7.state.cardNumber.replace(/\D/g,'').slice(-4) || '****';
+    // Set bank styling
+    const bankEl = document.getElementById('p7-3ds-bank');
+    bankEl.className = 'p7-3ds-bank ' + (bank.c||'default');
+    document.getElementById('p7-3ds-bank-name').textContent = bank.n;
+    document.getElementById('p7-3ds-bank-logo').textContent = (bank.n||'B')[0].toUpperCase();
+    // Tx info
+    document.getElementById('p7-3ds-amount').textContent = P7.fmtAmount(window.payAmount || 0);
+    document.getElementById('p7-3ds-card-last4').textContent = '•••• ' + last4;
+    // Generate fake phone
+    const last2 = Math.floor(Math.random()*90+10);
+    document.getElementById('p7-3ds-phone').textContent = `+7 (***) ***-**-${last2}`;
+    // Clear inputs
+    const inputs = document.querySelectorAll('#p7-3ds-code-wrap .p7-3ds-code-digit');
+    inputs.forEach(i => { i.value=''; i.classList.remove('filled'); });
+    P7.state.threeDSCode = '';
+    document.getElementById('p7-3ds-confirm').disabled = true;
+    // Start timer
+    P7.state.threeDSTimeLeft = 120;
+    P7.state.threeDSResendTimeLeft = 30;
+    P7.start3DSTimer();
+    ov.classList.add('open');
+    setTimeout(()=> inputs[0].focus(), 350);
+  });
+};
+
+P7.start3DSTimer = function(){
+  if (P7.state.threeDSTimer) clearInterval(P7.state.threeDSTimer);
+  if (P7.state.threeDSResendTimer) clearInterval(P7.state.threeDSResendTimer);
+  function update(){
+    const m = Math.floor(P7.state.threeDSTimeLeft/60);
+    const s = P7.state.threeDSTimeLeft%60;
+    const tEl = document.getElementById('p7-3ds-timer-val');
+    if (tEl) tEl.textContent = m + ':' + (s<10?'0':'') + s;
+    const wrap = document.getElementById('p7-3ds-timer');
+    if (P7.state.threeDSTimeLeft <= 0){
+      wrap.classList.add('expired');
+      tEl.parentNode.innerHTML = '<b style="color:#ef3124">Код истёк</b>';
+      clearInterval(P7.state.threeDSTimer);
+    }
+  }
+  update();
+  P7.state.threeDSTimer = setInterval(function(){
+    P7.state.threeDSTimeLeft--;
+    update();
+  }, 1000);
+  // Resend timer
+  function updateResend(){
+    const btn = document.getElementById('p7-3ds-resend');
+    if (P7.state.threeDSResendTimeLeft > 0){
+      btn.disabled = true;
+      btn.textContent = `Запросить новый код через ${P7.state.threeDSResendTimeLeft} с`;
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Запросить новый код';
+      clearInterval(P7.state.threeDSResendTimer);
+    }
+  }
+  updateResend();
+  P7.state.threeDSResendTimer = setInterval(function(){
+    P7.state.threeDSResendTimeLeft--;
+    updateResend();
+  }, 1000);
+};
+
+P7.resend3DS = function(){
+  P7.state.threeDSTimeLeft = 120;
+  P7.state.threeDSResendTimeLeft = 30;
+  const wrap = document.getElementById('p7-3ds-timer');
+  wrap.classList.remove('expired');
+  wrap.innerHTML = 'Код действителен <b id="p7-3ds-timer-val">2:00</b>';
+  P7.start3DSTimer();
+  if (window.showToast) showToast('Новый код отправлен', 'info');
+};
+
+P7.confirm3DS = function(){
+  if (P7.state.threeDSCode.length < 6) return;
+  const ov = document.getElementById('p7-3ds-overlay');
+  // Simulate bank check
+  const btn = document.getElementById('p7-3ds-confirm');
+  btn.disabled = true;
+  btn.textContent = 'Проверка...';
+  setTimeout(function(){
+    ov.classList.remove('open');
+    btn.textContent = 'Подтвердить';
+    if (P7.state.threeDSTimer) clearInterval(P7.state.threeDSTimer);
+    if (P7.state.threeDSResendTimer) clearInterval(P7.state.threeDSResendTimer);
+    if (P7.state.threeDSResolve) P7.state.threeDSResolve(true);
+  }, 1200);
+};
+
+P7.close3DS = function(){
+  const ov = document.getElementById('p7-3ds-overlay');
+  ov.classList.remove('open');
+  if (P7.state.threeDSTimer) clearInterval(P7.state.threeDSTimer);
+  if (P7.state.threeDSResendTimer) clearInterval(P7.state.threeDSResendTimer);
+  if (P7.state.threeDSResolve) P7.state.threeDSResolve(false);
+};
+
+// ───────── Card Form Setup ─────────
+P7.buildCardForm = function(){
+  const sub = document.getElementById('sub-cards');
+  if (!sub || document.getElementById('p7-cardform')) return;
+  // Hide the old Phase 5 sub-method type chips and card preview — Phase 7 form replaces them
+  try {
+    const oldHeader = sub.querySelector('.sub-method-header');
+    if (oldHeader) oldHeader.style.display = 'none';
+    sub.querySelectorAll('.sub-method-item').forEach(el => { el.style.display = 'none'; });
+    const oldPrev = document.getElementById('prev-card');
+    if (oldPrev) oldPrev.style.display = 'none';
+  } catch(e){}
+  const form = document.createElement('div');
+  form.id = 'p7-cardform';
+  form.className = 'p7-cardform show';
+  form.innerHTML = `
+    <div class="p7-cardvis">
+      <div class="p7-cardvis-inner" id="p7-cv-inner">
+        <div class="p7-cardvis-face">
+          <div class="p7-cv-brand" id="p7-cv-brand-front"></div>
+          <div class="p7-cv-chip"></div>
+          <div class="p7-cv-num" id="p7-cv-num">•••• •••• •••• ••••</div>
+          <div class="p7-cv-row">
+            <div><span class="p7-cv-lbl">Cardholder</span><span class="p7-cv-val" id="p7-cv-holder">HVH PLAYER</span></div>
+            <div style="text-align:right"><span class="p7-cv-lbl">Valid Thru</span><span class="p7-cv-val" id="p7-cv-exp-front">MM/YY</span></div>
+          </div>
+        </div>
+        <div class="p7-cardvis-back">
+          <div class="p7-cv-strip"></div>
+          <div class="p7-cv-cvv-strip" id="p7-cv-cvv-back">CVV</div>
+          <div style="text-align:center;color:rgba(255,255,255,.5);font-size:.6rem;margin-top:18px">3-значный код на обороте карты</div>
+        </div>
+      </div>
+    </div>
+    <div class="p7-cf-field">
+      <label class="p7-cf-label">Номер карты</label>
+      <div class="p7-cf-input-wrap" id="p7-cf-num-wrap">
+        <input class="p7-cf-input" id="p7-cf-num" type="tel" maxlength="23" placeholder="0000 0000 0000 0000" autocomplete="cc-number">
+        <div class="p7-cf-brand" id="p7-cf-brand"></div>
+      </div>
+      <div class="p7-cf-bank" id="p7-cf-bank"></div>
+      <div class="p7-cf-err" id="p7-cf-num-err">Неверный номер карты</div>
+    </div>
+    <div class="p7-cf-row">
+      <div class="p7-cf-field">
+        <label class="p7-cf-label">Срок</label>
+        <div class="p7-cf-input-wrap" id="p7-cf-exp-wrap">
+          <input class="p7-cf-input" id="p7-cf-exp" type="tel" maxlength="5" placeholder="MM/YY" autocomplete="cc-exp">
+        </div>
+        <div class="p7-cf-err" id="p7-cf-exp-err">Карта истекла</div>
+      </div>
+      <div class="p7-cf-field">
+        <label class="p7-cf-label">CVV</label>
+        <div class="p7-cf-input-wrap" id="p7-cf-cvv-wrap">
+          <input class="p7-cf-input" id="p7-cf-cvv" type="password" maxlength="4" placeholder="•••" autocomplete="cc-csc">
+        </div>
+        <div class="p7-cf-err" id="p7-cf-cvv-err">3 цифры с обратной стороны</div>
+      </div>
+    </div>
+    <div class="p7-cf-hint">
+      <i class="fa fa-lock"></i> Данные карты передаются по TLS 1.3 и не сохраняются на сервере
+    </div>
+    <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+      <button type="button" class="p7-hist-filter" onclick="P7.fillDemo('4377731234567896', '12/30', '737')">Тинькофф (demo)</button>
+      <button type="button" class="p7-hist-filter" onclick="P7.fillDemo('4276381234567892', '08/29', '432')">Сбер (demo)</button>
+      <button type="button" class="p7-hist-filter" onclick="P7.fillDemo('2200771234567899', '06/28', '199')">МИР Тинькофф (demo)</button>
+      <button type="button" class="p7-hist-filter" onclick="P7.fillDemo('4154821234567894', '04/27', '155')">Альфа (demo)</button>
+      <button type="button" class="p7-hist-filter" onclick="P7.fillDemo('4779641234567891', '11/28', '288')">ВТБ (demo)</button>
+    </div>
+  `;
+  sub.appendChild(form);
+  // Wire up handlers
+  const numInp = document.getElementById('p7-cf-num');
+  const expInp = document.getElementById('p7-cf-exp');
+  const cvvInp = document.getElementById('p7-cf-cvv');
+  numInp.addEventListener('input', P7.onCardNumInput);
+  numInp.addEventListener('blur', P7.validateNum);
+  expInp.addEventListener('input', P7.onExpInput);
+  expInp.addEventListener('blur', P7.validateExp);
+  cvvInp.addEventListener('input', P7.onCvvInput);
+  cvvInp.addEventListener('blur', P7.validateCvv);
+  cvvInp.addEventListener('focus', function(){
+    document.getElementById('p7-cv-inner').classList.add('flipped');
+  });
+  cvvInp.addEventListener('blur', function(){
+    document.getElementById('p7-cv-inner').classList.remove('flipped');
+  });
+};
+
+P7.fillDemo = function(num, exp, cvv){
+  const numInp = document.getElementById('p7-cf-num');
+  const expInp = document.getElementById('p7-cf-exp');
+  const cvvInp = document.getElementById('p7-cf-cvv');
+  numInp.value = P7.formatCardNum(num);
+  expInp.value = exp;
+  cvvInp.value = cvv;
+  P7.onCardNumInput({target:numInp});
+  P7.onExpInput({target:expInp});
+  P7.onCvvInput({target:cvvInp});
+};
+
+P7.onCardNumInput = function(e){
+  let v = e.target.value;
+  const caretPos = e.target.selectionStart;
+  v = P7.formatCardNum(v);
+  e.target.value = v;
+  P7.state.cardNumber = v;
+  const brand = P7.detectBrand(v);
+  const brandEl = document.getElementById('p7-cf-brand');
+  P7.state.cardBrand = brand;
+  if (brand && P7.brandLogos[brand.brand]){
+    brandEl.innerHTML = P7.brandLogos[brand.brand];
+    document.getElementById('p7-cv-brand-front').innerHTML = P7.brandLogos[brand.brand];
+  } else {
+    brandEl.innerHTML = '';
+    document.getElementById('p7-cv-brand-front').innerHTML = '';
+  }
+  // Update visual card num
+  const cvNumEl = document.getElementById('p7-cv-num');
+  const digits = v.replace(/\D/g,'').padEnd(16, '•');
+  cvNumEl.textContent = digits.slice(0,4) + ' ' + digits.slice(4,8) + ' ' + digits.slice(8,12) + ' ' + digits.slice(12,16);
+  // Detect bank
+  const bank = P7.detectBank(v);
+  P7.state.cardBank = bank;
+  const bankEl = document.getElementById('p7-cf-bank');
+  if (bank){
+    bankEl.textContent = '🏦 ' + bank.n;
+    bankEl.classList.add('show');
+  } else {
+    bankEl.classList.remove('show');
+  }
+  P7.updatePayButton();
+};
+
+P7.onExpInput = function(e){
+  let v = e.target.value.replace(/\D/g,'').slice(0,4);
+  if (v.length > 2) v = v.slice(0,2) + '/' + v.slice(2);
+  e.target.value = v;
+  P7.state.cardExp = v;
+  document.getElementById('p7-cv-exp-front').textContent = v || 'MM/YY';
+  P7.updatePayButton();
+};
+
+P7.onCvvInput = function(e){
+  const max = (P7.state.cardBrand && P7.state.cardBrand.cvvLen) || 3;
+  let v = e.target.value.replace(/\D/g,'').slice(0, max);
+  e.target.value = v;
+  P7.state.cardCvv = v;
+  document.getElementById('p7-cv-cvv-back').textContent = v.padEnd(max, '•') || '•••';
+  P7.updatePayButton();
+};
+
+P7.validateNum = function(){
+  const wrap = document.getElementById('p7-cf-num-wrap');
+  const err = document.getElementById('p7-cf-num-err');
+  if (!P7.state.cardNumber) { wrap.classList.remove('ok','bad'); err.classList.remove('show'); return false; }
+  const ok = P7.luhn(P7.state.cardNumber);
+  wrap.classList.toggle('ok', ok);
+  wrap.classList.toggle('bad', !ok);
+  err.classList.toggle('show', !ok);
+  return ok;
+};
+
+P7.validateExp = function(){
+  const wrap = document.getElementById('p7-cf-exp-wrap');
+  const err = document.getElementById('p7-cf-exp-err');
+  const v = P7.state.cardExp;
+  if (!v) { wrap.classList.remove('ok','bad'); err.classList.remove('show'); return false; }
+  const m = v.match(/^(\d{2})\/(\d{2})$/);
+  if (!m) { wrap.classList.add('bad'); err.classList.add('show'); err.textContent='Неверный формат'; return false; }
+  const mo = +m[1], yr = 2000 + +m[2];
+  if (mo < 1 || mo > 12){ wrap.classList.add('bad'); err.classList.add('show'); err.textContent='Неверный месяц'; return false; }
+  const now = new Date();
+  const exp = new Date(yr, mo, 0);
+  if (exp < now){ wrap.classList.add('bad'); err.classList.add('show'); err.textContent='Карта истекла'; return false; }
+  wrap.classList.remove('bad'); wrap.classList.add('ok'); err.classList.remove('show');
+  return true;
+};
+
+P7.validateCvv = function(){
+  const wrap = document.getElementById('p7-cf-cvv-wrap');
+  const err = document.getElementById('p7-cf-cvv-err');
+  const need = (P7.state.cardBrand && P7.state.cardBrand.cvvLen) || 3;
+  if (!P7.state.cardCvv) { wrap.classList.remove('ok','bad'); err.classList.remove('show'); return false; }
+  const ok = P7.state.cardCvv.length === need;
+  wrap.classList.toggle('ok', ok); wrap.classList.toggle('bad', !ok); err.classList.toggle('show', !ok);
+  return ok;
+};
+
+P7.cardValid = function(){
+  return P7.luhn(P7.state.cardNumber) &&
+    /^\d{2}\/\d{2}$/.test(P7.state.cardExp) &&
+    (function(){ const m = P7.state.cardExp.match(/^(\d{2})\/(\d{2})$/);
+      const exp = new Date(2000 + +m[2], +m[1], 0); return exp >= new Date(); })() &&
+    P7.state.cardCvv.length === ((P7.state.cardBrand && P7.state.cardBrand.cvvLen) || 3);
+};
+
+P7.updatePayButton = function(){
+  // Find the pay-next-btn in step 2 (the "ОПЛАТИТЬ →" button)
+  const btn = document.querySelector('#pp-2 .pay-next-btn');
+  if (!btn) return;
+  if (window.payMethod === 'Visa / Mastercard'){
+    if (P7.cardValid()){
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+    } else {
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
+      btn.style.cursor = 'not-allowed';
+    }
+  } else {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+  }
+};
+
+// ───────── 3DS Code Input Wiring ─────────
+P7.wire3DSCode = function(){
+  const inputs = document.querySelectorAll('#p7-3ds-code-wrap .p7-3ds-code-digit');
+  inputs.forEach(function(inp, idx){
+    inp.addEventListener('input', function(e){
+      const v = e.target.value.replace(/\D/g,'').slice(0,1);
+      e.target.value = v;
+      e.target.classList.toggle('filled', !!v);
+      if (v && idx < inputs.length-1) inputs[idx+1].focus();
+      // Build code
+      let code = '';
+      inputs.forEach(i => code += i.value);
+      P7.state.threeDSCode = code;
+      const btn = document.getElementById('p7-3ds-confirm');
+      btn.disabled = code.length !== 6;
+      // Auto-submit on full code
+      if (code.length === 6){
+        setTimeout(()=> P7.confirm3DS(), 250);
+      }
+    });
+    inp.addEventListener('keydown', function(e){
+      if (e.key === 'Backspace' && !inp.value && idx > 0){
+        inputs[idx-1].focus();
+      }
+    });
+    inp.addEventListener('paste', function(e){
+      e.preventDefault();
+      const data = (e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6);
+      for (let i = 0; i < data.length && i < inputs.length; i++){
+        inputs[i].value = data[i];
+        inputs[i].classList.add('filled');
+      }
+      P7.state.threeDSCode = data;
+      document.getElementById('p7-3ds-confirm').disabled = data.length !== 6;
+      if (data.length < 6) inputs[data.length].focus();
+      else { inputs[5].focus(); setTimeout(()=> P7.confirm3DS(), 250); }
+    });
+  });
+};
+
+// ───────── СБП Improved Flow ─────────
+P7.buildSbpImproved = function(){
+  const subSbp = document.getElementById('sub-sbp');
+  if (!subSbp || document.getElementById('p7-sbp-improved')) return;
+  // Hide existing primitive preview
+  const oldPrev = subSbp.querySelector('#prev-sbp');
+  if (oldPrev) oldPrev.style.display = 'none';
+  const wrap = document.createElement('div');
+  wrap.id = 'p7-sbp-improved';
+  wrap.className = 'p7-sbp-improved';
+  wrap.innerHTML = `
+    <div class="p7-sbp-qr-real">
+      <canvas id="p7-sbp-qr-canvas" width="200" height="200"></canvas>
+      <div class="p7-sbp-qr-logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2 L4 7 L4 17 L12 22 L20 17 L20 7 Z" fill="#5E33A8"/><path d="M12 6 L8 8.5 L8 15.5 L12 18 L16 15.5 L16 8.5 Z" fill="#fff"/></svg>
+      </div>
+    </div>
+    <div class="p7-sbp-timer" id="p7-sbp-timer-val">QR действителен 5:00</div>
+    <div class="p7-sbp-status-real" id="p7-sbp-status-real">
+      <div class="dot"></div>
+      <span id="p7-sbp-status-text">Ожидание сканирования из приложения банка</span>
+    </div>
+    <div class="p7-sbp-banks">
+      <div class="p7-sbp-bank"><div class="p7-sbp-bank-logo" style="background:#21a038">С</div>Сбер</div>
+      <div class="p7-sbp-bank"><div class="p7-sbp-bank-logo" style="background:#ffdd2d;color:#1d1d1d">Т</div>Тинькофф</div>
+      <div class="p7-sbp-bank"><div class="p7-sbp-bank-logo" style="background:#00aaff">В</div>ВТБ</div>
+      <div class="p7-sbp-bank"><div class="p7-sbp-bank-logo" style="background:#ef3124">А</div>Альфа</div>
+      <div class="p7-sbp-bank"><div class="p7-sbp-bank-logo" style="background:#fffe66;color:#1d1d1d">Р</div>Райф</div>
+      <div class="p7-sbp-bank"><div class="p7-sbp-bank-logo" style="background:#0079c1">Г</div>Газпром</div>
+      <div class="p7-sbp-bank"><div class="p7-sbp-bank-logo" style="background:#00aff7">О</div>Открытие</div>
+      <div class="p7-sbp-bank"><div class="p7-sbp-bank-logo" style="background:#5e33a8">+</div>196 банков</div>
+    </div>
+    <div class="p7-sbp-fake-pay-btn" onclick="P7.simulateSbpPay()">
+      [ ДЕМО ] нажми для имитации сканирования
+    </div>
+  `;
+  subSbp.appendChild(wrap);
+};
+
+P7.refreshSbpQr = function(){
+  const canvas = document.getElementById('p7-sbp-qr-canvas');
+  if (!canvas) return;
+  const amount = window.payAmount || 2500;
+  const orderId = 'A' + Math.floor(Math.random()*1e9).toString(36).toUpperCase();
+  const sbpUrl = `https://qr.nspk.ru/${orderId}?type=02&bank=100000000111&sum=${amount*100}&cur=RUB&crc=${Math.floor(Math.random()*0xFFFF).toString(16).toUpperCase()}`;
+  P7.drawQR(canvas, sbpUrl, {size:200, grid:33, color:'#000'});
+};
+
+P7.startSbpTimer = function(){
+  P7.state.sbpTimeLeft = 300;
+  if (P7.state.sbpTimer) clearInterval(P7.state.sbpTimer);
+  function update(){
+    const m = Math.floor(P7.state.sbpTimeLeft/60);
+    const s = P7.state.sbpTimeLeft%60;
+    const el = document.getElementById('p7-sbp-timer-val');
+    if (el) {
+      el.textContent = `QR действителен ${m}:${s<10?'0':''}${s}`;
+      el.classList.toggle('warn', P7.state.sbpTimeLeft <= 60 && P7.state.sbpTimeLeft > 0);
+      el.classList.toggle('expired', P7.state.sbpTimeLeft <= 0);
+    }
+    if (P7.state.sbpTimeLeft <= 0){ clearInterval(P7.state.sbpTimer); if (el) el.textContent = 'QR истёк'; }
+  }
+  update();
+  P7.state.sbpTimer = setInterval(function(){
+    P7.state.sbpTimeLeft--;
+    update();
+  }, 1000);
+};
+
+P7.simulateSbpPay = function(){
+  const st = document.getElementById('p7-sbp-status-real');
+  const txt = document.getElementById('p7-sbp-status-text');
+  st.classList.remove('paid');
+  st.classList.add('scanning');
+  txt.textContent = 'QR отсканирован · Открыто приложение банка...';
+  setTimeout(function(){
+    txt.textContent = 'Подтверждение в приложении банка...';
+  }, 1200);
+  setTimeout(function(){
+    st.classList.remove('scanning');
+    st.classList.add('paid');
+    txt.textContent = '✓ Оплачено · Средства поступили';
+    if (P7.state.sbpResolve){ P7.state.sbpResolve(true); P7.state.sbpResolve = null; }
+  }, 2800);
+};
+
+// ───────── Crypto Wallet Flow ─────────
+P7.buildCryptoWallet = function(){
+  const subCrypto = document.getElementById('sub-crypto');
+  if (!subCrypto || document.getElementById('p7-crypto-wallet')) return;
+  const wrap = document.createElement('div');
+  wrap.id = 'p7-crypto-wallet';
+  wrap.className = 'p7-crypto-wallet show';
+  wrap.innerHTML = `
+    <div class="p7-cw-qr"><canvas id="p7-cw-qr-canvas" width="180" height="180"></canvas></div>
+    <div class="p7-cw-addr-wrap">
+      <div class="p7-cw-addr" id="p7-cw-addr">TRX_WALLET_PLACEHOLDER</div>
+      <button type="button" class="p7-cw-copy" id="p7-cw-copy" onclick="P7.copyAddr()">КОПИРОВАТЬ</button>
+    </div>
+    <div class="p7-cw-net-info">
+      <div class="p7-cw-net-row"><span class="lbl">Сумма</span><span class="val" id="p7-cw-amt">0.00000 USDT</span></div>
+      <div class="p7-cw-net-row"><span class="lbl">Сеть</span><span class="val" id="p7-cw-net">TRC-20</span></div>
+    </div>
+    <div class="p7-cw-timer" id="p7-cw-timer">Адрес действителен 30:00</div>
+    <div class="p7-cw-confirm-btn" onclick="P7.simulateCryptoPay()">
+      [ ДЕМО ] имитировать поступление tx
+    </div>
+  `;
+  subCrypto.appendChild(wrap);
+};
+
+P7.refreshCryptoWallet = function(){
+  const canvas = document.getElementById('p7-cw-qr-canvas');
+  if (!canvas) return;
+  const amount = window.payAmount || 2500;
+  const type = window.payCryptoType || 'USDT';
+  // Wallet addresses (testnet/demo, NOT real funded wallets)
+  const addrs = {
+    'Bitcoin': '1HVHCASEsDemoWaLLetAddreSSxXxXxXxX',
+    'Ethereum': '0xHVHc4SE5Dem0W4lletAddre55D3M0Cryp',
+    'USDT': 'TRkHVH9CaseDem0WalletAddreSSxXxXxXc',
+    'BNB': 'bnb1hvhcasedem0w4lletaddre55xxxxxxx9',
+  };
+  const nets = {'Bitcoin':'BTC · BIP21','Ethereum':'ETH · ERC-20','USDT':'TRC-20','BNB':'BSC · BEP-20'};
+  const rates = {'Bitcoin':10250000,'Ethereum':350000,'USDT':100,'BNB':62000};
+  const cryptoUnit = {'Bitcoin':'BTC','Ethereum':'ETH','USDT':'USDT','BNB':'BNB'};
+  const addr = addrs[type] || addrs['USDT'];
+  const cryptoAmt = (amount / (rates[type]||100)).toFixed(type==='USDT'?2:6);
+  document.getElementById('p7-cw-addr').textContent = addr;
+  document.getElementById('p7-cw-amt').textContent = cryptoAmt + ' ' + (cryptoUnit[type]||'USDT');
+  document.getElementById('p7-cw-net').textContent = nets[type] || 'TRC-20';
+  // QR
+  P7.drawQR(canvas, `crypto:${addr}?amount=${cryptoAmt}`, {size:180, grid:29, color:'#f7931a'});
+};
+
+P7.copyAddr = function(){
+  const addr = document.getElementById('p7-cw-addr').textContent;
+  if (navigator.clipboard) navigator.clipboard.writeText(addr).catch(()=>{});
+  const btn = document.getElementById('p7-cw-copy');
+  btn.textContent = '✓ СКОПИРОВАНО';
+  btn.classList.add('copied');
+  setTimeout(function(){ btn.textContent = 'КОПИРОВАТЬ'; btn.classList.remove('copied'); }, 2000);
+};
+
+P7.startCryptoTimer = function(){
+  P7.state.cryptoTimeLeft = 1800;
+  if (P7.state.cryptoTimer) clearInterval(P7.state.cryptoTimer);
+  function update(){
+    const m = Math.floor(P7.state.cryptoTimeLeft/60);
+    const s = P7.state.cryptoTimeLeft%60;
+    const el = document.getElementById('p7-cw-timer');
+    if (el) el.textContent = `Адрес действителен ${m}:${s<10?'0':''}${s}`;
+    if (P7.state.cryptoTimeLeft <= 0){ clearInterval(P7.state.cryptoTimer); if (el) el.textContent = 'Адрес истёк'; }
+  }
+  update();
+  P7.state.cryptoTimer = setInterval(function(){ P7.state.cryptoTimeLeft--; update(); }, 1000);
+};
+
+P7.simulateCryptoPay = function(){
+  if (P7.state.cryptoResolve){ P7.state.cryptoResolve(true); P7.state.cryptoResolve = null; }
+};
+
+// ───────── Decline scenarios ─────────
+P7.maybeDecline = function(){
+  // 8% decline rate for cards, 2% for others
+  const isCard = window.payMethod === 'Visa / Mastercard';
+  const rate = isCard ? 0.08 : 0.02;
+  if (P7.state.declineMode === 'force-decline') return P7.declineMode || P7.pickDecline();
+  if (P7.state.declineMode === 'force-pass') return null;
+  if (Math.random() < rate) return P7.pickDecline();
+  return null;
+};
+
+P7.declineMode = null;
+
+P7.pickDecline = function(){
+  const reasons = [
+    {code:'05', title:'Карта отклонена', msg:'Банк-эмитент отклонил операцию. Попробуйте другую карту или обратитесь в банк.'},
+    {code:'51', title:'Недостаточно средств', msg:'На карте недостаточно средств для проведения операции.'},
+    {code:'61', title:'Превышен лимит', msg:'Превышен установленный лимит операций. Попробуйте позже или измените сумму.'},
+    {code:'59', title:'Подозрение на мошенничество', msg:'Транзакция заблокирована системой безопасности. Свяжитесь с банком.'},
+    {code:'91', title:'Технический сбой', msg:'Платёжный шлюз временно недоступен. Попробуйте через минуту.'},
+  ];
+  return reasons[Math.floor(Math.random()*reasons.length)];
+};
+
+// ───────── Build decline panel (added to step 3) ─────────
+P7.injectDeclinePanel = function(){
+  const pp3 = document.getElementById('pp-3');
+  if (!pp3 || document.getElementById('p7-decline')) return;
+  const panel = document.createElement('div');
+  panel.id = 'p7-decline';
+  panel.className = 'p7-decline';
+  panel.innerHTML = `
+    <div class="p7-decline-icon">⚠️</div>
+    <div class="p7-decline-title" id="p7-decline-title">Платёж отклонён</div>
+    <div class="p7-decline-msg" id="p7-decline-msg">Банк-эмитент отклонил операцию.</div>
+    <div class="p7-decline-code" id="p7-decline-code">Код ошибки: 05</div>
+    <div class="p7-decline-actions">
+      <button class="p7-decline-btn cancel" onclick="P7.cancelDecline()">Отмена</button>
+      <button class="p7-decline-btn retry" onclick="P7.retryDecline()">Повторить</button>
+    </div>
+  `;
+  pp3.appendChild(panel);
+};
+
+P7.showDecline = function(reason){
+  P7.injectDeclinePanel();
+  // Hide processing UI, show decline panel
+  const pp3 = document.getElementById('pp-3');
+  const procWrap = pp3.querySelector('.processing-wrap');
+  if (procWrap) procWrap.style.display = 'none';
+  document.getElementById('p7-decline-title').textContent = reason.title;
+  document.getElementById('p7-decline-msg').textContent = reason.msg;
+  document.getElementById('p7-decline-code').textContent = 'Код ошибки: ' + reason.code;
+  document.getElementById('p7-decline').classList.add('show');
+  // Save declined tx
+  P7.tx.add({
+    id: P7.tx.genId(),
+    rrn: P7.tx.genRrn(),
+    method: window.payMethod || 'Карта',
+    amount: window.payAmount || 0,
+    status: 'declined',
+    declineCode: reason.code,
+    declineMsg: reason.title,
+    ts: Date.now(),
+    cardLast4: P7.state.cardNumber.replace(/\D/g,'').slice(-4) || null,
+    bank: P7.state.cardBank ? P7.state.cardBank.n : null,
+  });
+};
+
+P7.cancelDecline = function(){
+  P7.resetPanel();
+  if (window.closePayment) closePayment();
+};
+
+P7.retryDecline = function(){
+  P7.resetPanel();
+  if (window.payStep) payStep(2);
+};
+
+P7.resetPanel = function(){
+  const pp3 = document.getElementById('pp-3');
+  const procWrap = pp3.querySelector('.processing-wrap');
+  if (procWrap) procWrap.style.display = '';
+  const d = document.getElementById('p7-decline');
+  if (d) d.classList.remove('show');
+};
+
+// ───────── Receipt Modal ─────────
+P7.lastReceiptTx = null;
+
+P7.showReceipt = function(tx){
+  P7.lastReceiptTx = tx;
+  const body = document.getElementById('p7-rcpt-body');
+  body.innerHTML = `
+    <div class="p7-rcpt-row"><span class="lbl">Чек №</span><span class="val">${tx.id}</span></div>
+    <div class="p7-rcpt-row"><span class="lbl">RRN</span><span class="val">${tx.rrn}</span></div>
+    <div class="p7-rcpt-row"><span class="lbl">Дата/время</span><span class="val">${P7.fmtDate(new Date(tx.ts))}</span></div>
+    <div class="p7-rcpt-row"><span class="lbl">Метод</span><span class="val">${tx.method}</span></div>
+    ${tx.cardLast4 ? `<div class="p7-rcpt-row"><span class="lbl">Карта</span><span class="val">•••• ${tx.cardLast4}</span></div>` : ''}
+    ${tx.bank ? `<div class="p7-rcpt-row"><span class="lbl">Банк</span><span class="val">${tx.bank}</span></div>` : ''}
+    <div class="p7-rcpt-row"><span class="lbl">Сумма</span><span class="val">${P7.fmtAmount(tx.amount)}</span></div>
+    ${tx.bonus ? `<div class="p7-rcpt-row"><span class="lbl">Бонус</span><span class="val" style="color:#00aa55">+${P7.fmtAmount(tx.bonus)}</span></div>` : ''}
+    ${tx.promo ? `<div class="p7-rcpt-row"><span class="lbl">Промокод</span><span class="val">${tx.promo}</span></div>` : ''}
+    <div class="p7-rcpt-row p7-rcpt-total"><span class="lbl">Зачислено</span><span class="val">${P7.fmtAmount(tx.credited || tx.amount)}</span></div>
+  `;
+  document.getElementById('p7-rcpt-genat').textContent = P7.fmtDate(new Date());
+  document.getElementById('p7-rcpt-overlay').classList.add('open');
+};
+
+P7.closeReceipt = function(){
+  document.getElementById('p7-rcpt-overlay').classList.remove('open');
+};
+
+P7.downloadReceipt = function(){
+  const tx = P7.lastReceiptTx;
+  if (!tx) return;
+  // Plain-text receipt as .txt (PDF generation requires lib; use simple txt)
+  const lines = [
+    'HVH.CASES — КАССОВЫЙ ЧЕК',
+    '═══════════════════════════════',
+    'Чек №: ' + tx.id,
+    'RRN: ' + tx.rrn,
+    'Дата: ' + P7.fmtDate(new Date(tx.ts)),
+    'Метод: ' + tx.method,
+    tx.cardLast4 ? 'Карта: **** ' + tx.cardLast4 : null,
+    tx.bank ? 'Банк: ' + tx.bank : null,
+    'Сумма: ' + P7.fmtAmount(tx.amount),
+    tx.bonus ? 'Бонус: +' + P7.fmtAmount(tx.bonus) : null,
+    tx.promo ? 'Промокод: ' + tx.promo : null,
+    'Зачислено: ' + P7.fmtAmount(tx.credited || tx.amount),
+    '═══════════════════════════════',
+    'Статус: УСПЕШНО',
+    '',
+    'ФНС РФ · ОФД · АО «Платформа ОФД»',
+    'ИНН 1234567890 · ОФД 0987654321',
+    '',
+    'Симуляция чека для демо',
+  ].filter(Boolean).join('\n');
+  const blob = new Blob([lines], {type: 'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `HVH-CASES-receipt-${tx.id}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=> URL.revokeObjectURL(url), 1000);
+  if (window.showToast) showToast('Чек сохранён', 'success');
+};
+
+P7.emailReceipt = function(){
+  if (window.showToast) showToast('Чек отправлен на email (демо)', 'info');
+  setTimeout(()=> P7.closeReceipt(), 600);
+};
+
+// ───────── Transaction History Tab ─────────
+P7.addHistoryTab = function(){
+  const tabs = document.querySelector('.tabs');
+  if (!tabs || document.getElementById('p7-tab-history')) return;
+  // Inject tab button
+  const tab = document.createElement('div');
+  tab.id = 'p7-tab-history';
+  tab.className = 'tab';
+  tab.innerHTML = '📜 ИСТОРИЯ';
+  tab.onclick = function(){ if (window.showTab) showTab('history', tab); };
+  // Insert after deposit
+  const deposit = Array.from(tabs.children).find(t => t.textContent.includes('ПОПОЛНЕНИЕ'));
+  if (deposit && deposit.nextSibling) tabs.insertBefore(tab, deposit.nextSibling);
+  else tabs.appendChild(tab);
+  // Inject section
+  const section = document.createElement('div');
+  section.id = 'sec-history';
+  section.className = 'section';
+  section.innerHTML = `
+    <div class="p7-section-header">
+      <h2>📜 ИСТОРИЯ ПЛАТЕЖЕЙ</h2>
+      <div class="badge" id="p7-hist-count">0</div>
+    </div>
+    <div class="p7-hist-wrap">
+      <div class="p7-hist-stats" id="p7-hist-stats">
+        <div class="p7-hist-stat"><div class="v" id="p7-hs-total">0</div><div class="l">Всего</div></div>
+        <div class="p7-hist-stat"><div class="v" id="p7-hs-sum">0 ₽</div><div class="l">Сумма</div></div>
+        <div class="p7-hist-stat"><div class="v" id="p7-hs-ok">0</div><div class="l">Успешно</div></div>
+        <div class="p7-hist-stat"><div class="v" id="p7-hs-fail">0</div><div class="l">Отклонено</div></div>
+      </div>
+      <div class="p7-hist-filters" id="p7-hist-filters">
+        <button class="p7-hist-filter active" data-f="all" onclick="P7.filterHistory('all', this)">Все</button>
+        <button class="p7-hist-filter" data-f="paid" onclick="P7.filterHistory('paid', this)">Успешные</button>
+        <button class="p7-hist-filter" data-f="declined" onclick="P7.filterHistory('declined', this)">Отклонённые</button>
+      </div>
+      <div class="p7-hist-list" id="p7-hist-list"></div>
+    </div>
+  `;
+  // Insert after sec-deposit
+  const secDeposit = document.getElementById('sec-deposit');
+  if (secDeposit && secDeposit.parentNode) secDeposit.parentNode.insertBefore(section, secDeposit.nextSibling);
+  P7.renderHistory();
+};
+
+P7.currentFilter = 'all';
+
+P7.filterHistory = function(f, el){
+  P7.currentFilter = f;
+  document.querySelectorAll('#p7-hist-filters .p7-hist-filter').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  P7.renderHistory();
+};
+
+P7.renderHistory = function(){
+  const txs = P7.tx.list();
+  const filtered = txs.filter(t => P7.currentFilter === 'all' || t.status === P7.currentFilter);
+  const listEl = document.getElementById('p7-hist-list');
+  const countEl = document.getElementById('p7-hist-count');
+  if (countEl) countEl.textContent = txs.length;
+  // Stats
+  const okSum = txs.filter(t => t.status === 'paid').reduce((s,t) => s + (t.credited||t.amount), 0);
+  const okCount = txs.filter(t => t.status === 'paid').length;
+  const failCount = txs.filter(t => t.status === 'declined').length;
+  const setIf = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  setIf('p7-hs-total', txs.length);
+  setIf('p7-hs-sum', P7.fmtAmount(okSum));
+  setIf('p7-hs-ok', okCount);
+  setIf('p7-hs-fail', failCount);
+  if (!listEl) return;
+  if (!filtered.length){
+    listEl.innerHTML = '<div class="p7-hist-empty"><i class="fa fa-receipt"></i>Нет транзакций<br><small>Сделайте пополнение чтобы появились записи</small></div>';
+    return;
+  }
+  const methodIcons = {
+    'Visa / Mastercard': '💳', 'СБП / ФастПэй':'⚡', 'Криптовалюта':'₿',
+    'Google Pay':'🅖', 'Apple Pay':'🍎', 'QIWI / ЮMoney':'💰',
+  };
+  listEl.innerHTML = filtered.map(function(t){
+    const icon = methodIcons[t.method] || '💳';
+    const date = new Date(t.ts);
+    const dateStr = date.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const declined = t.status === 'declined';
+    return `
+      <div class="p7-hist-item" onclick="P7.showHistoryDetail('${t.id}')">
+        <div class="p7-hist-item-icon ${declined?'declined':''}">${declined?'⚠️':icon}</div>
+        <div class="p7-hist-item-info">
+          <div class="p7-hist-item-method">${t.method}${t.cardLast4?' · •••• '+t.cardLast4:''}</div>
+          <div class="p7-hist-item-time">${dateStr} · ${declined?'<span style="color:#ff3355">'+(t.declineMsg||'Отклонено')+'</span>':'#'+t.id}</div>
+        </div>
+        <div class="p7-hist-item-amount ${declined?'declined':''}">${declined?'':'+'}${P7.fmtAmount(t.amount)}</div>
+      </div>
+    `;
+  }).join('');
+};
+
+P7.showHistoryDetail = function(id){
+  const tx = P7.tx.list().find(t => t.id === id);
+  if (!tx) return;
+  if (tx.status === 'declined'){
+    if (window.showToast) showToast(`${tx.method} · Отклонено: ${tx.declineMsg||''} (код ${tx.declineCode||'—'})`, 'error');
+  } else {
+    P7.showReceipt(tx);
+  }
+};
+
+// ───────── Patch existing payment flow ─────────
+P7.patchPayment = function(){
+  // Monkey-patch openPayment to reset form state and refresh QRs
+  const origOpenPayment = window.openPayment;
+  if (origOpenPayment && !origOpenPayment._p7Patched){
+    window.openPayment = function(amount, label){
+      const r = origOpenPayment.apply(this, arguments);
+      P7.buildCardForm();
+      P7.buildSbpImproved();
+      P7.buildCryptoWallet();
+      P7.injectDeclinePanel();
+      P7.wire3DSCode();
+      // Reset card state
+      setTimeout(function(){
+        P7.refreshSbpQr();
+        P7.refreshCryptoWallet();
+        P7.updatePayButton();
+      }, 100);
+      return r;
+    };
+    window.openPayment._p7Patched = true;
+  }
+
+  // Monkey-patch payStep
+  const origPayStep = window.payStep;
+  if (origPayStep && !origPayStep._p7Patched){
+    window.payStep = async function(step){
+      // Intercept transition to step 3
+      if (step === 3){
+        // For cards: validate
+        if (window.payMethod === 'Visa / Mastercard'){
+          if (!P7.cardValid()){
+            if (window.showToast) showToast('Заполни данные карты корректно', 'error');
+            return;
+          }
+          // Show 3DS
+          const passed = await P7.show3DS();
+          if (!passed){
+            if (window.showToast) showToast('Платёж отменён', 'error');
+            return;
+          }
+        }
+        // For СБП: wait for fake scan
+        if (window.payMethod === 'СБП / ФастПэй'){
+          P7.startSbpTimer();
+          // Display & wait for either timeout or manual scan
+          const ok = await new Promise(function(resolve){
+            P7.state.sbpResolve = resolve;
+          });
+          if (!ok) return;
+        }
+        // For crypto: wait for tx
+        if (window.payMethod === 'Криптовалюта'){
+          P7.startCryptoTimer();
+          const ok = await new Promise(function(resolve){
+            P7.state.cryptoResolve = resolve;
+          });
+          if (!ok) return;
+        }
+      }
+      // Call original
+      return origPayStep.call(this, step);
+    };
+    window.payStep._p7Patched = true;
+  }
+
+  // Monkey-patch startProcessing to intercept and possibly decline
+  const origStartProc = window.startProcessing;
+  if (origStartProc && !origStartProc._p7Patched){
+    window.startProcessing = function(){
+      const decline = P7.maybeDecline();
+      if (decline){
+        // Short processing then fail
+        const status = document.getElementById('proc-status');
+        const detail = document.getElementById('proc-detail');
+        const bar = document.getElementById('proc-bar');
+        const pct = document.getElementById('proc-pct');
+        if (status) status.textContent = 'ПРОВЕРКА';
+        if (detail) detail.textContent = 'Проверка реквизитов...';
+        if (bar) bar.style.width = '45%';
+        if (pct) pct.textContent = '45%';
+        setTimeout(function(){
+          if (status) status.textContent = 'ОТКЛОНЕНО';
+          if (detail) detail.textContent = 'Банк-эмитент отказал в авторизации';
+          if (bar) { bar.style.width = '100%'; bar.style.background = 'linear-gradient(90deg,#ff3355,#ff5577)'; }
+          if (pct) pct.textContent = '100%';
+          setTimeout(function(){
+            P7.showDecline(decline);
+          }, 400);
+        }, 1400);
+        return;
+      }
+      return origStartProc.apply(this, arguments);
+    };
+    window.startProcessing._p7Patched = true;
+  }
+
+  // Monkey-patch showSuccess to record successful transaction
+  const origShowSuccess = window.showSuccess;
+  if (origShowSuccess && !origShowSuccess._p7Patched){
+    window.showSuccess = function(){
+      const ret = origShowSuccess.apply(this, arguments);
+      // Record transaction
+      setTimeout(function(){
+        const totalPct = (window.payBonusPct || 0) + (window.payPromoPct || 0);
+        const bonusAmt = Math.round((window.payAmount||0) * totalPct/100) + (window.payPromoFlat||0);
+        const credited = Math.round(window.payAmount || 0) + bonusAmt;
+        const tx = {
+          id: P7.tx.genId(),
+          rrn: P7.tx.genRrn(),
+          method: window.payMethod || 'Карта',
+          amount: window.payAmount || 0,
+          credited: credited,
+          bonus: bonusAmt || null,
+          promo: window.payPromoCode || null,
+          status: 'paid',
+          ts: Date.now(),
+          cardLast4: P7.state.cardNumber.replace(/\D/g,'').slice(-4) || null,
+          bank: P7.state.cardBank ? P7.state.cardBank.n : null,
+        };
+        P7.tx.add(tx);
+        P7.lastReceiptTx = tx;
+        // Add "Чек" button to success screen
+        const summary = document.getElementById('suc-summary');
+        if (summary && !document.getElementById('p7-show-rcpt-btn')){
+          const btn = document.createElement('button');
+          btn.id = 'p7-show-rcpt-btn';
+          btn.className = 'pay-next-btn';
+          btn.style.background = 'linear-gradient(135deg,#00aa55,#00cc77)';
+          btn.style.marginTop = '10px';
+          btn.innerHTML = '🧾 ПОКАЗАТЬ ЧЕК';
+          btn.onclick = function(){ P7.showReceipt(tx); };
+          // Insert before "ПРОДОЛЖИТЬ" button
+          const continueBtn = summary.parentNode.querySelector('.pay-next-btn');
+          if (continueBtn) summary.parentNode.insertBefore(btn, continueBtn);
+        }
+        // Floating success toast
+        P7.showFloatToast(`+${P7.fmtAmount(credited)} зачислено`, tx.method);
+      }, 100);
+      return ret;
+    };
+    window.showSuccess._p7Patched = true;
+  }
+};
+
+P7.showFloatToast = function(title, sub){
+  const el = document.getElementById('p7-pay-success-toast');
+  if (!el) return;
+  document.getElementById('p7-pay-toast-title').textContent = title;
+  document.getElementById('p7-pay-toast-sub').textContent = sub;
+  el.classList.add('show');
+  setTimeout(()=> el.classList.remove('show'), 3500);
+};
+
+// ───────── ЮMoney sub-menu ─────────
+P7.buildYooMoney = function(){
+  // Find the QIWI/ЮMoney method-item and add a sub-menu after it
+  const items = document.querySelectorAll('.method-item');
+  let yooItem = null;
+  items.forEach(it => { if (/QIWI|ЮMoney/.test(it.textContent)) yooItem = it; });
+  if (!yooItem || document.getElementById('sub-yoo')) return;
+  const sub = document.createElement('div');
+  sub.id = 'sub-yoo';
+  sub.className = 'sub-method-menu';
+  sub.innerHTML = `
+    <span class="sub-method-label">💰 ВОЙДИ В КОШЕЛЁК</span>
+    <div class="p7-yoo-form show" id="p7-yoo-form">
+      <div class="p7-yoo-logo">ЮMoney</div>
+      <div class="p7-cf-field">
+        <label class="p7-cf-label">Email / Телефон</label>
+        <div class="p7-cf-input-wrap">
+          <input class="p7-cf-input" id="p7-yoo-login" placeholder="example@yandex.ru" type="text">
+        </div>
+      </div>
+      <div class="p7-cf-field">
+        <label class="p7-cf-label">Пароль</label>
+        <div class="p7-cf-input-wrap">
+          <input class="p7-cf-input" id="p7-yoo-pass" placeholder="••••••••" type="password">
+        </div>
+      </div>
+      <div class="p7-yoo-balance" id="p7-yoo-balance">
+        <div class="p7-yoo-balance-val" id="p7-yoo-bal-val">— ₽</div>
+        <div class="p7-yoo-balance-lbl">Доступно для платежа</div>
+      </div>
+    </div>
+  `;
+  yooItem.parentNode.insertBefore(sub, yooItem.nextSibling);
+  // Patch selMethod to also show this
+  const origSelMethod = window.selMethod;
+  if (origSelMethod && !origSelMethod._p7Patched){
+    window.selMethod = function(el, name){
+      const r = origSelMethod.apply(this, arguments);
+      // Hide our extras
+      const s = document.getElementById('sub-yoo'); if (s) s.classList.remove('show');
+      const cf = document.getElementById('p7-cardform'); if (cf) cf.classList.toggle('show', name === 'Visa / Mastercard');
+      const cw = document.getElementById('p7-crypto-wallet'); if (cw) cw.classList.toggle('show', name === 'Криптовалюта');
+      if (name === 'QIWI / ЮMoney'){ if (s) s.classList.add('show'); }
+      P7.updatePayButton();
+      // Refresh QRs if needed
+      if (name === 'СБП / ФастПэй') P7.refreshSbpQr();
+      if (name === 'Криптовалюта') P7.refreshCryptoWallet();
+      return r;
+    };
+    window.selMethod._p7Patched = true;
+  }
+};
+
+// ───────── Initialization ─────────
+P7.init = function(){
+  P7.buildCardForm();
+  P7.buildSbpImproved();
+  P7.buildCryptoWallet();
+  P7.buildYooMoney();
+  P7.injectDeclinePanel();
+  P7.wire3DSCode();
+  P7.addHistoryTab();
+  P7.patchPayment();
+  // Initial QR draws
+  setTimeout(function(){
+    P7.refreshSbpQr();
+    P7.refreshCryptoWallet();
+  }, 200);
+  // Listen to amount changes to redraw SBP QR
+  const observer = new MutationObserver(function(){
+    if (document.querySelector('.pay-overlay.open')) P7.refreshSbpQr();
+  });
+  const amtEl = document.getElementById('pay-amount-num');
+  if (amtEl) observer.observe(amtEl, {childList:true, characterData:true, subtree:true});
+};
+
+if (document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(P7.init, 300); });
+} else {
+  setTimeout(P7.init, 300);
+}
+
+})();
+</script>
+<!-- PHASE7_JS_END -->
+
+
+
 </body>
 </html>
