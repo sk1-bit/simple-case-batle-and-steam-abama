@@ -12332,6 +12332,587 @@ console.log('[P8] visual overhaul module loaded · 10 features');
 </script>
 <!-- PHASE10_JS_END -->
 
+<!-- PHASE11_CSS_START -->
+<style>
+/* ─── PHASE 11: Game Shop ─── */
+
+/* Sub-tab navigation */
+.p11-subtabs { display: flex; gap: 8px; margin: 16px auto 20px; max-width: 1200px; padding: 0 16px; flex-wrap: wrap; align-items: center; }
+.p11-subtab { padding: 10px 18px; background: rgba(10,18,36,.7); border: 1px solid rgba(0,200,255,.2); border-radius: 10px; cursor: pointer; color: #aab; font-weight: 600; font-size: .85rem; font-family: 'Orbitron', sans-serif; transition: all .2s; }
+.p11-subtab:hover { color: #fff; border-color: rgba(0,200,255,.5); transform: translateY(-1px); }
+.p11-subtab.active { background: linear-gradient(135deg, rgba(0,200,255,.2), rgba(0,144,255,.1)); border-color: #00c8ff; color: #00c8ff; box-shadow: 0 4px 12px rgba(0,200,255,.18); }
+
+/* Region selector */
+.p11-region-row { margin-left: auto; display: flex; align-items: center; gap: 8px; color: #aab; font-size: .8rem; flex-wrap: wrap; }
+.p11-region-flag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(10,18,36,.7); border: 1px solid rgba(0,200,255,.2); border-radius: 8px; cursor: pointer; font-size: .85rem; color: #aab; transition: all .2s; }
+.p11-region-flag:hover { border-color: rgba(0,200,255,.5); color: #fff; }
+.p11-region-flag.active { background: rgba(0,200,255,.15); border-color: #00c8ff; color: #00c8ff; font-weight: 600; }
+
+/* Game card overrides */
+.p11-card { position: relative; background: linear-gradient(180deg, rgba(10,18,36,.92), rgba(5,8,18,.95)); border: 1px solid rgba(0,200,255,.16); border-radius: 14px; overflow: hidden; transition: all .3s; cursor: default; }
+.p11-card:hover { transform: translateY(-4px); border-color: rgba(0,200,255,.4); box-shadow: 0 10px 30px rgba(0,200,255,.18); }
+
+.p11-cover { position: relative; aspect-ratio: 460 / 215; background-size: cover; background-position: center; overflow: hidden; }
+.p11-cover-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.p11-cover-title { position: absolute; bottom: 8px; left: 10px; right: 10px; font-family: 'Orbitron', sans-serif; font-weight: 800; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.95), 0 0 12px rgba(0,0,0,.6); font-size: 1.05rem; letter-spacing: .5px; pointer-events: none; line-height: 1.1; }
+
+.p11-meta-badge { position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 1.05rem; color: #fff; background: #66cc33; box-shadow: 0 2px 8px rgba(0,0,0,.4); z-index: 3; }
+.p11-meta-badge.yellow { background: #ffb800; color: #1a1100; }
+.p11-meta-badge.red { background: #ff4444; }
+
+.p11-wish-btn { position: absolute; top: 8px; left: 8px; width: 34px; height: 34px; border-radius: 50%; background: rgba(0,0,0,.65); border: none; cursor: pointer; color: #fff; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: all .2s; z-index: 3; }
+.p11-wish-btn:hover { background: rgba(255,90,120,.85); transform: scale(1.1); }
+.p11-wish-btn.in-list { background: #ff5478; color: #fff; }
+
+.p11-disc-badge { position: absolute; top: 56px; left: 0; padding: 4px 10px; background: #4caf50; color: #fff; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: .8rem; box-shadow: 0 2px 6px rgba(0,0,0,.4); z-index: 3; }
+
+.p11-info { padding: 14px; }
+.p11-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.p11-tag { padding: 2px 8px; background: rgba(0,200,255,.15); color: #aaeaff; border-radius: 4px; font-size: .7rem; font-weight: 600; }
+.p11-publisher { font-size: .75rem; color: #889; margin-bottom: 6px; }
+.p11-genre-row { font-size: .8rem; color: #aab; margin-bottom: 10px; }
+.p11-reviews { color: #66c0f4; font-size: .75rem; margin-bottom: 12px; }
+
+.p11-price-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; margin-bottom: 12px; }
+.p11-old-price { text-decoration: line-through; color: #677; font-size: .8rem; line-height: 1; }
+.p11-price { font-family: 'Orbitron', sans-serif; font-size: 1.3rem; font-weight: 800; color: #fff; line-height: 1; }
+.p11-price.discounted { color: #66cc33; }
+
+.p11-actions { display: flex; gap: 8px; }
+.p11-buy-btn { flex: 1; padding: 10px; background: linear-gradient(135deg, #1b9aff, #0066cc); color: #fff; border: none; border-radius: 8px; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: .85rem; cursor: pointer; transition: all .2s; }
+.p11-buy-btn:hover { background: linear-gradient(135deg, #2eaaff, #0080ff); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(27,154,255,.4); }
+.p11-buy-btn.owned { background: #44aa88; cursor: default; }
+.p11-buy-btn.owned:hover { transform: none; box-shadow: none; }
+.p11-trailer-btn, .p11-gift-btn { width: 40px; padding: 0; background: rgba(255,255,255,.08); border: 1px solid rgba(0,200,255,.2); border-radius: 8px; cursor: pointer; color: #fff; font-size: 1rem; transition: all .2s; display: flex; align-items: center; justify-content: center; }
+.p11-trailer-btn:hover, .p11-gift-btn:hover { background: rgba(0,200,255,.2); border-color: #00c8ff; transform: translateY(-1px); }
+
+/* Trailer modal */
+.p11-trailer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.92); display: none; align-items: center; justify-content: center; z-index: 10001; padding: 20px; backdrop-filter: blur(8px); }
+.p11-trailer-overlay.open { display: flex; animation: p11-fade-in .2s ease-out; }
+@keyframes p11-fade-in { from { opacity: 0; } to { opacity: 1; } }
+.p11-trailer-box { width: 100%; max-width: 900px; background: #0a0e18; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 80px rgba(0,200,255,.3); border: 1px solid rgba(0,200,255,.2); }
+.p11-trailer-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: linear-gradient(135deg, #15263d, #0a1224); border-bottom: 1px solid rgba(0,200,255,.18); }
+.p11-trailer-title { font-family: 'Orbitron', sans-serif; font-weight: 700; color: #fff; font-size: 1rem; }
+.p11-trailer-close { background: rgba(255,255,255,.1); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.3rem; line-height: 1; transition: all .2s; }
+.p11-trailer-close:hover { background: rgba(255,90,120,.7); }
+.p11-trailer-video { position: relative; aspect-ratio: 16 / 9; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.p11-trailer-canvas { position: absolute; inset: 0; width: 100%; height: 100%; transition: transform 12s linear; }
+.p11-trailer-canvas.zoom { transform: scale(1.15); }
+.p11-trailer-canvas svg { width: 100%; height: 100%; }
+.p11-trailer-play-icon { position: relative; z-index: 2; width: 84px; height: 84px; border-radius: 50%; background: rgba(255,255,255,.92); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .2s; box-shadow: 0 4px 24px rgba(0,0,0,.6); }
+.p11-trailer-play-icon:hover { transform: scale(1.1); }
+.p11-trailer-play-icon::after { content: ''; width: 0; height: 0; margin-left: 8px; border-top: 16px solid transparent; border-bottom: 16px solid transparent; border-left: 24px solid #000; transition: all .2s; }
+.p11-trailer-play-icon.playing { background: rgba(0,0,0,.55); width: 60px; height: 60px; opacity: 0; }
+.p11-trailer-play-icon.playing:hover { opacity: 1; }
+.p11-trailer-play-icon.playing::after { content: '\\\\'; margin-left: 0; width: 0; height: 0; font-size: 0; border: none; background: linear-gradient(to right, #fff 0 30%, transparent 30% 70%, #fff 70% 100%); width: 22px; height: 28px; }
+.p11-trailer-controls { padding: 10px 14px; background: linear-gradient(to top, rgba(0,0,0,.85), rgba(0,0,0,.4)); display: flex; align-items: center; gap: 12px; }
+.p11-trailer-progress { flex: 1; height: 4px; background: rgba(255,255,255,.2); border-radius: 2px; overflow: hidden; cursor: pointer; }
+.p11-trailer-progress-bar { height: 100%; background: linear-gradient(90deg, #00c8ff, #66e0ff); width: 0%; transition: width .25s linear; }
+.p11-trailer-time { font-family: 'Orbitron', sans-serif; font-size: .75rem; color: #aab; min-width: 80px; text-align: right; }
+.p11-trailer-fs { background: transparent; border: none; color: #fff; cursor: pointer; font-size: 1.1rem; }
+.p11-trailer-fs:hover { color: #00c8ff; }
+
+/* Library card */
+.p11-lib-card { display: flex; gap: 16px; padding: 14px; background: rgba(10,18,36,.92); border: 1px solid rgba(0,200,255,.18); border-radius: 12px; margin-bottom: 12px; align-items: center; transition: all .2s; }
+.p11-lib-card:hover { border-color: rgba(0,200,255,.4); transform: translateX(2px); }
+.p11-lib-cover { width: 184px; height: 86px; background-size: cover; background-position: center; border-radius: 8px; flex-shrink: 0; position: relative; overflow: hidden; }
+.p11-lib-info { flex: 1; min-width: 0; }
+.p11-lib-title { font-family: 'Orbitron', sans-serif; font-weight: 700; color: #fff; font-size: 1rem; margin-bottom: 4px; }
+.p11-lib-genre { color: #889; font-size: .8rem; margin-bottom: 6px; }
+.p11-lib-hours { color: #66c0f4; font-size: .85rem; font-weight: 600; }
+.p11-lib-hours.playing { color: #66cc33; }
+.p11-lib-hours.playing::before { content: '● '; color: #66cc33; animation: p11-pulse 1.2s ease-in-out infinite; }
+@keyframes p11-pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+.p11-lib-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.p11-play-btn { padding: 10px 22px; background: linear-gradient(135deg, #66cc33, #4d9926); border: none; border-radius: 8px; color: #fff; font-family: 'Orbitron', sans-serif; font-weight: 700; cursor: pointer; transition: all .2s; font-size: .9rem; }
+.p11-play-btn:hover { background: linear-gradient(135deg, #77dd44, #5da136); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102,204,51,.35); }
+.p11-play-btn.playing { background: linear-gradient(135deg, #ff8844, #cc5522); }
+.p11-play-btn.playing:hover { background: linear-gradient(135deg, #ff9955, #d66633); box-shadow: 0 4px 12px rgba(255,136,68,.4); }
+
+/* Empty state */
+.p11-empty { text-align: center; padding: 40px 20px; color: #889; }
+.p11-empty-icon { font-size: 3.5rem; margin-bottom: 12px; opacity: .4; }
+.p11-empty-text { font-size: 1.1rem; margin-bottom: 8px; color: #aab; font-weight: 600; }
+.p11-empty-hint { font-size: .85rem; color: #677; }
+
+/* Gift modal */
+.p11-gift-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.85); display: none; align-items: center; justify-content: center; z-index: 10001; padding: 20px; backdrop-filter: blur(6px); }
+.p11-gift-overlay.open { display: flex; animation: p11-fade-in .2s ease-out; }
+.p11-gift-box { width: 100%; max-width: 440px; background: linear-gradient(180deg, #15263d, #0a1224); border: 1px solid rgba(0,200,255,.25); border-radius: 14px; padding: 22px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+.p11-gift-h { font-family: 'Orbitron', sans-serif; font-weight: 700; color: #fff; font-size: 1.2rem; margin-bottom: 6px; text-align: center; }
+.p11-gift-sub { color: #aab; font-size: .8rem; text-align: center; margin-bottom: 18px; }
+.p11-gift-game-row { background: rgba(0,0,0,.45); border-radius: 8px; padding: 10px; margin-bottom: 14px; display: flex; align-items: center; gap: 12px; }
+.p11-gift-game-cover { width: 80px; height: 38px; background-size: cover; background-position: center; border-radius: 4px; flex-shrink: 0; }
+.p11-gift-game-name { color: #fff; font-weight: 600; font-size: .9rem; font-family: 'Orbitron', sans-serif; flex: 1; min-width: 0; }
+.p11-gift-game-price { color: #66cc33; font-weight: 700; font-family: 'Orbitron', sans-serif; font-size: .95rem; }
+.p11-gift-input { width: 100%; padding: 12px; background: rgba(0,0,0,.5); border: 1px solid rgba(0,200,255,.25); border-radius: 8px; color: #fff; font-size: .95rem; margin-bottom: 12px; box-sizing: border-box; font-family: inherit; }
+.p11-gift-input:focus { outline: none; border-color: #00c8ff; }
+.p11-gift-input::placeholder { color: #556; }
+.p11-gift-msg-input { resize: vertical; min-height: 60px; }
+.p11-gift-btn-row { display: flex; gap: 10px; margin-top: 4px; }
+.p11-gift-btn-go { flex: 1; padding: 12px; background: linear-gradient(135deg, #ff5478, #cc2244); border: none; border-radius: 8px; color: #fff; font-family: 'Orbitron', sans-serif; font-weight: 700; cursor: pointer; transition: all .2s; }
+.p11-gift-btn-go:hover { background: linear-gradient(135deg, #ff6688, #dd3355); transform: translateY(-1px); }
+.p11-gift-btn-cancel { padding: 12px 22px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer; transition: all .2s; }
+.p11-gift-btn-cancel:hover { background: rgba(255,255,255,.15); }
+
+/* Section header tweak */
+#sec-games .section-title h2 { display: inline-block; }
+
+/* Mobile */
+@media (max-width: 720px) {
+  .p11-subtab { padding: 8px 12px; font-size: .75rem; }
+  .p11-region-row { width: 100%; justify-content: flex-start; margin-left: 0; margin-top: 6px; }
+  .p11-lib-card { flex-direction: column; align-items: flex-start; padding: 12px; }
+  .p11-lib-cover { width: 100%; height: 130px; }
+  .p11-lib-actions { width: 100%; }
+  .p11-play-btn { width: 100%; }
+  .p11-trailer-box { max-width: 100%; }
+  .p11-trailer-play-icon { width: 64px; height: 64px; }
+  .p11-trailer-play-icon::after { border-top: 12px solid transparent; border-bottom: 12px solid transparent; border-left: 20px solid #000; }
+  .p11-gift-box { padding: 16px; }
+}
+</style>
+<!-- PHASE11_CSS_END -->
+
+<!-- PHASE11_JS_START -->
+<script>
+(function(){
+  if (window.P11 && window.P11._loaded) return;
+  const P11 = window.P11 = window.P11 || {};
+  P11._loaded = true;
+
+  // ════════════ Helpers ════════════
+  const fmt = (n) => Math.floor(n).toLocaleString('ru').replace(/,/g,' ');
+  const fmtC = (n) => (window.fmtCur ? window.fmtCur(n) : fmt(n) + ' ₽');
+  const toast = (m, t) => (window.showToast ? window.showToast(m, t || 'success') : console.log(m));
+  const $ = (id) => document.getElementById(id);
+
+  // ════════════ State ════════════
+  P11.REGION = localStorage.getItem('p11.region') || 'ru';
+  P11.SUBTAB = 'store';
+  P11.FILTER = 'all';
+
+  // ════════════ Catalog ════════════
+  P11.GAMES = [
+    {id:'cs2', title:'CS2 PRIME STATUS', genre:'ШУТЕР · СОРЕВНОВАТЕЛЬНЫЙ', tags:['Online','PvP','FPS'], publisher:'Valve · 2023', cat:'shooter', emoji:'💥', metacritic:83, reviews:152834, prices:{ru:1190,eu:1999,ww:2299}, oldPrices:{ru:2999,eu:3999,ww:4499}, bg:'linear-gradient(135deg,#fcb813,#cc8400)', pattern:'cs'},
+    {id:'gta5', title:'GTA V PREMIUM', genre:'ACTION · ОТКРЫТЫЙ МИР', tags:['Open World','Action','Online'], publisher:'Rockstar · 2015', cat:'open-world', emoji:'🏙️', metacritic:96, reviews:1985612, prices:{ru:699,eu:1499,ww:1799}, oldPrices:{ru:1499,eu:2999,ww:3499}, bg:'linear-gradient(135deg,#001a3d,#0a4d8b)', pattern:'gta'},
+    {id:'cyberpunk', title:'CYBERPUNK 2077', genre:'RPG · ОТКРЫТЫЙ МИР', tags:['RPG','Open World','Sci-Fi'], publisher:'CD Projekt RED · 2020', cat:'rpg', emoji:'🦾', metacritic:86, reviews:574198, prices:{ru:1999,eu:2999,ww:3499}, oldPrices:{ru:3499,eu:4999,ww:5999}, bg:'linear-gradient(135deg,#0d0d1a,#1a0a3d)', pattern:'cyber'},
+    {id:'elden', title:'ELDEN RING', genre:'RPG · ACTION', tags:['Souls','Open World','Hardcore'], publisher:'FromSoftware · 2022', cat:'rpg', emoji:'⚔️', metacritic:96, reviews:651209, prices:{ru:2499,eu:3499,ww:4499}, oldPrices:{ru:3999,eu:5499,ww:6499}, bg:'linear-gradient(135deg,#1a1200,#4d3800)', pattern:'elden'},
+    {id:'rdr2', title:'RED DEAD REDEMPTION 2', genre:'ACTION · ОТКРЫТЫЙ МИР', tags:['Open World','Western','Story'], publisher:'Rockstar · 2018', cat:'open-world', emoji:'🤠', metacritic:97, reviews:478123, prices:{ru:1299,eu:2499,ww:2999}, oldPrices:{ru:2999,eu:4499,ww:4999}, bg:'linear-gradient(135deg,#3d1a00,#8b4513)', pattern:'rdr'},
+    {id:'witcher3', title:'WITCHER 3: WILD HUNT', genre:'RPG · ОТКРЫТЫЙ МИР', tags:['RPG','Fantasy','Story'], publisher:'CD Projekt RED · 2015', cat:'rpg', emoji:'🐺', metacritic:92, reviews:642137, prices:{ru:899,eu:1499,ww:1999}, oldPrices:{ru:1999,eu:2999,ww:3499}, bg:'linear-gradient(135deg,#0d1a00,#1a3d00)', pattern:'witcher'},
+    {id:'tarkov', title:'ESCAPE FROM TARKOV: EOD', genre:'ШУТЕР · ВЫЖИВАНИЕ', tags:['Hardcore','PvP','Loot'], publisher:'Battlestate · 2017', cat:'shooter', emoji:'🪖', metacritic:76, reviews:127814, prices:{ru:3499,eu:5499,ww:6499}, oldPrices:{ru:5999,eu:8999,ww:9999}, bg:'linear-gradient(135deg,#0a1a0a,#1a3d1a)', pattern:'tarkov'},
+    {id:'rust', title:'RUST', genre:'ВЫЖИВАНИЕ · МУЛЬТИПЛЕЕР', tags:['Survival','Online','PvP'], publisher:'Facepunch · 2018', cat:'survival', emoji:'🔧', metacritic:70, reviews:743289, prices:{ru:599,eu:999,ww:1299}, oldPrices:{ru:1199,eu:1999,ww:2499}, bg:'linear-gradient(135deg,#1a0a00,#4d2200)', pattern:'rust'},
+    {id:'pubg', title:'PUBG: BATTLEGROUNDS', genre:'ШУТЕР · BATTLE ROYALE', tags:['BR','PvP','Online'], publisher:'Krafton · 2017', cat:'shooter', emoji:'🔫', metacritic:86, reviews:2231400, prices:{ru:499,eu:899,ww:1199}, oldPrices:{ru:999,eu:1799,ww:2299}, bg:'linear-gradient(135deg,#1a1000,#4d3000)', pattern:'pubg'},
+    {id:'atomic', title:'ATOMIC HEART', genre:'RPG · ШУТЕР', tags:['Sci-Fi','USSR','Action'], publisher:'Mundfish · 2023', cat:'rpg', emoji:'🧬', metacritic:75, reviews:38492, prices:{ru:2999,eu:3999,ww:4799}, oldPrices:{ru:3999,eu:5499,ww:6499}, bg:'linear-gradient(135deg,#3d0033,#8b0066)', pattern:'atomic'},
+    {id:'stalker2', title:'STALKER 2: HEART OF CHORNOBYL', genre:'RPG · ШУТЕР', tags:['Open World','Survival','Slavic'], publisher:'GSC Game World · 2024', cat:'rpg', emoji:'☢️', metacritic:73, reviews:21984, prices:{ru:2499,eu:3499,ww:4499}, oldPrices:{ru:3999,eu:5999,ww:6999}, bg:'linear-gradient(135deg,#1a3300,#446600)', pattern:'stalker'},
+    {id:'dayz', title:'DAYZ', genre:'ВЫЖИВАНИЕ · ЗОМБИ', tags:['Survival','Zombies','PvP'], publisher:'Bohemia · 2018', cat:'survival', emoji:'🧟', metacritic:72, reviews:198432, prices:{ru:1299,eu:1999,ww:2499}, oldPrices:{ru:1999,eu:2999,ww:3499}, bg:'linear-gradient(135deg,#0d0d00,#2a2a00)', pattern:'dayz'},
+    {id:'ark', title:'ARK: SURVIVAL EVOLVED', genre:'ВЫЖИВАНИЕ · ДИНОЗАВРЫ', tags:['Survival','Dinos','Co-op'], publisher:'Studio Wildcard · 2017', cat:'survival', emoji:'🦕', metacritic:70, reviews:432891, prices:{ru:399,eu:799,ww:999}, oldPrices:{ru:1299,eu:1999,ww:2499}, bg:'linear-gradient(135deg,#001a1a,#004d4d)', pattern:'ark'},
+    {id:'dota', title:'DOTA 2: BATTLE PASS', genre:'MOBA · ESPORTS', tags:['MOBA','Online','PvP'], publisher:'Valve · 2024', cat:'action', emoji:'🛡️', metacritic:90, reviews:849210, prices:{ru:999,eu:1499,ww:1999}, oldPrices:{ru:1999,eu:2999,ww:3499}, bg:'linear-gradient(135deg,#4d0000,#8b0000)', pattern:'dota'},
+    {id:'helldivers2', title:'HELLDIVERS 2', genre:'ШУТЕР · CO-OP', tags:['Co-op','Sci-Fi','PvE'], publisher:'Arrowhead · 2024', cat:'shooter', emoji:'🚀', metacritic:82, reviews:298734, prices:{ru:3290,eu:4499,ww:4999}, oldPrices:{ru:3999,eu:5999,ww:6499}, bg:'linear-gradient(135deg,#3d2a00,#bf6500)', pattern:'helldivers'},
+  ];
+
+  // Persistent state
+  P11.owned = (() => { try { return JSON.parse(localStorage.getItem('p11.owned') || '{}'); } catch(e) { return {}; } })();
+  P11.wishlist = new Set((() => { try { return JSON.parse(localStorage.getItem('p11.wishlist') || '[]'); } catch(e) { return []; } })());
+
+  // Read current balance (window.balance, or parsed from balance-val DOM)
+  P11.getBal = function(){
+    if (typeof window.balance === 'number') return window.balance;
+    const v = document.getElementById('balance-val');
+    if (v){ const n = parseInt((v.textContent||'').replace(/\D/g,''),10); if (!isNaN(n)) return n; }
+    return 0;
+  };
+
+  P11.save = function(){
+    try {
+      // Strip transient fields before save
+      const cleaned = {};
+      for (const [id, d] of Object.entries(P11.owned)){
+        cleaned[id] = { minutes: d.minutes || 0, lastPlayed: d.lastPlayed || Date.now(), ownedAt: d.ownedAt || Date.now() };
+      }
+      localStorage.setItem('p11.owned', JSON.stringify(cleaned));
+      localStorage.setItem('p11.wishlist', JSON.stringify([...P11.wishlist]));
+      localStorage.setItem('p11.region', P11.REGION);
+    } catch(e) {}
+  };
+
+  // ════════════ Cover SVGs (one per game pattern) ════════════
+  P11.makeCover = function(g){
+    const p = g.pattern || 'gen', id = g.id;
+    if (p === 'cs') return `<svg class="p11-cover-svg" viewBox="0 0 460 215" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="cs-${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fcb813"/><stop offset="1" stop-color="#7a4500"/></linearGradient></defs><rect width="460" height="215" fill="url(#cs-${id})"/><g transform="translate(230,107) rotate(-12)"><rect x="-115" y="-12" width="220" height="22" fill="#1a0d00" rx="2"/><polygon points="-115,-12 -130,-6 -130,16 -115,10" fill="#0a0500"/><rect x="-80" y="-3" width="40" height="5" fill="#0a0500"/><circle cx="-30" cy="2" r="8" fill="#0a0500"/><rect x="0" y="-2" width="105" height="4" fill="#0a0500"/></g><text x="230" y="195" text-anchor="middle" font-family="Orbitron" font-weight="900" font-size="20" fill="#fff" opacity=".4">★ PRIME ★</text></svg>`;
+    if (p === 'gta') return `<svg class="p11-cover-svg" viewBox="0 0 460 215" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="gt-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a4d8b"/><stop offset="1" stop-color="#000814"/></linearGradient></defs><rect width="460" height="215" fill="url(#gt-${id})"/><g fill="#0a1f3d"><rect x="40" y="115" width="50" height="80"/><rect x="100" y="75" width="60" height="120"/><rect x="170" y="55" width="70" height="140"/><rect x="250" y="95" width="55" height="100"/><rect x="315" y="65" width="65" height="130"/><rect x="390" y="120" width="50" height="75"/></g><g fill="#ffd700" opacity=".85"><rect x="50" y="125" width="4" height="4"/><rect x="65" y="140" width="4" height="4"/><rect x="80" y="155" width="4" height="4"/><rect x="110" y="85" width="4" height="4"/><rect x="130" y="105" width="4" height="4"/><rect x="145" y="130" width="4" height="4"/><rect x="180" y="65" width="4" height="4"/><rect x="200" y="85" width="4" height="4"/><rect x="215" y="120" width="4" height="4"/><rect x="225" y="160" width="4" height="4"/><rect x="265" y="110" width="4" height="4"/><rect x="285" y="140" width="4" height="4"/><rect x="325" y="75" width="4" height="4"/><rect x="345" y="100" width="4" height="4"/><rect x="360" y="135" width="4" height="4"/><rect x="400" y="135" width="4" height="4"/></g><circle cx="380" cy="35" r="14" fill="#ffd700" opacity=".5"/><text x="230" y="185" text-anchor="middle" font-family="Orbitron" font-weight="900" font-size="34" fill="#ffd700" opacity=".95">GTA V</text></svg>`;
+    if (p === 'cyber') return `<svg class="p11-cover-svg" viewBox="0 0 460 215" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="cy-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a0a3d"/><stop offset="1" stop-color="#0a0014"/></linearGradient></defs><rect width="460" height="215" fill="url(#cy-${id})"/><g stroke="#ffe000" stroke-width="1.2" fill="none" opacity=".55"><line x1="0" y1="60" x2="460" y2="60"/><line x1="0" y1="85" x2="460" y2="85"/><line x1="0" y1="125" x2="460" y2="125"/><line x1="0" y1="155" x2="460" y2="155"/></g><g fill="#ff00ff" opacity=".75"><circle cx="60" cy="60" r="3"/><circle cx="180" cy="85" r="3"/><circle cx="290" cy="125" r="3"/><circle cx="380" cy="60" r="3"/><circle cx="420" cy="155" r="3"/></g><g><polygon points="230,38 252,55 252,165 208,165 208,55" fill="#ffe000" opacity=".92"/><circle cx="230" cy="78" r="9" fill="#ff00ff"/><rect x="223" y="98" width="14" height="8" fill="#ff00ff"/><rect x="216" y="115" width="28" height="3" fill="#000"/><rect x="219" y="135" width="22" height="3" fill="#000"/></g><text x="230" y="200" text-anchor="middle" font-family="Orbitron" font-weight="900" font-size="22" fill="#ffe000">2077</text></svg>`;
+    if (p === 'elden') return `<svg class="p11-cover-svg" viewBox="0 0 460 215" preserveAspectRatio="xMidYMid slice"><defs><radialGradient id="el-${id}" cx="50%" cy="50%" r="65%"><stop offset="0" stop-color="#cc9d40"/><stop offset=".7" stop-color="#4d3800"/><stop offset="1" stop-color="#1a1200"/></radialGradient></defs><rect width="460" height="215" fill="url(#el-${id})"/><g transform="translate(230,108)" fill="none" stroke="#ffd700"><circle cx="0" cy="0" r="70" stroke-width="2.5"/><circle cx="0" cy="0" r="48" stroke-width="1.5" opacity=".7"/><circle cx="0" cy="0" r="26" stroke-width="1.2" opacity=".4"/><g stroke-width="2"><line x1="0" y1="-70" x2="0" y2="70"/><line x1="-70" y1="0" x2="70" y2="0"/><line x1="-49" y1="-49" x2="49" y2="49"/><line x1="-49" y1="49" x2="49" y2="-49"/></g></g><g transform="translate(230,108)" fill="#ffd700"><circle cx="0" cy="0" r="8"/></g><text x="230" y="200" text-anchor="middle" font-family="Orbitron" font-weight="900" font-size="13" fill="#ffd700" opacity=".75" letter-spacing="3">ELDEN RING</text></svg>`;
+    if (p === 'rdr') return `<svg class="p11-cover-svg" viewBox="0 0 460 215" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="rd-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffaa55"/><stop offset=".4" stop-color="#cc6633"/><stop offset="1" stop-color="#3d1a00"/></linearGradient></defs><rect width="460" height="215" fill="url(#rd-${id})"/><circle cx="370" cy="58" r="28" fill="#ffd699" opacity=".95"/><g fill="#2a1500"><path d="M 0 165 L 70 130 L 130 145 L 200 120 L 280 135 L 350 115 L 460 130 L 460 215 L 0 215 Z"/></g><g transform="translate(225,118)"><circle cx="0" cy="0" r="14" fill="#1a0d00"/><path d="M -10 -8 L -16 -16 L -14 -18 L -8 -10 Z" fill="#1a0d00"/><rect x="-2" y="14" width="4" height="40" fill="#1a0d00"/><line x1="0" y1="22" x2="-8" y2="35" stroke="#1a0d00" stroke-width="2"/><line x1="0" y1="22" x2="8" y2="35" stroke="#1a0d00" stroke-width="2"/></g><g transform="translate(220,170)" fill="#1a0d00"><polygon points="-25,15 -5,15 0,0 5,15 25,15 18,20 12,20 8,28 -8,28 -12,20 -18,20"/></g></svg>`;
+    if (p === 'witcher') return `<svg class="p11-cover-svg" viewBox="0 0 460 215" preserveAspectRatio="xMidYMid slice"><defs><radialGradient id="wt-${id}" cx="50%" cy="50%" r="70%"><stop offset="0" stop-color="#2a5500"/><stop offset="1" stop-color="#0d1a00"/></radialGradient></defs><rect width="460" height="215" fill="url(#wt-${id})"/><g transform="translate(230,108)"><circle cx="0" cy="0" r="60" fill="none" stroke="#aaffaa" stroke-width="2.5"/><g><path d="M -18 -18 Q -12 -25 -6 -18 L -6 -8 L -18 -8 Z" fill="#aaffaa"/><path d="M 18 -18 Q 12 -25 6 -18 L 6 -8 L 18 -8 Z" fill="#aaffaa"/><circle cx="-12" cy="-12" r="3" fill="#000"/><circle cx="12" cy="-12" r="3" fill="#000"/><path d="M -22 8 Q 0 22 22 8" stroke="#aaffaa" stroke-width="3" fill="none"/><path d="M -22 12 Q 0 28 22 12" stroke="#aaffaa" stroke-width="2" fill="none" opacity=".5"/></g></g><text x="230" y="195" text-anchor="middle" font-family="Orbitron" font-weight="900" font-size="14" fill="#aaffaa" opacity=".75" letter-spacing="3">THE WITCHER 3</text></svg>`;
+    if (p === 'tarkov') return `<svg class="p11-cover-svg" viewBox="0 0 460 215" preserveAspectRatio="xMidYMid slice"><defs><pattern id="ck-${id}" patternUnits="userSpaceOnUse" width="38" height="38"><rect width="19" height="19" fill="#1a3d1a"/><rect x="19" y="19" width="19" height="19" fill="#1a3d1a"/><rect x="19" y="0" width="19" height="19" fill="#0d2a0d"/><rect x="0" y="19" width="19" height="19" fill="#0d2a0d"/></pattern></defs><rect width="460" height="215" fill="#0d1a0d"/><rect width="460" height="215" fill="url(#ck-${id})" opacity=".4"/><g transform="translate(230,108)"><rect x="-90" y="-14" width="180" height="28" fill="#444" rx="2"/><rect x="-100" y="-7" width="14" height="14" fill="#222" rx="1"/><circle cx="-70" cy="0" r="10" fill="#1a1a1a" stroke="#666" stroke-width="1.5"/><circle cx="-70" cy="0" r="5" fill="#000"/><rect x="-40" y="-3" width="80" height="6" fill="#222"/><rect x="50" y="-5" width="40" height="10" fill="#333"/><polygon points="90,-5 105,0 90,5" fill="#222"/></g><text x="230" y="200" text-anchor="middle" font-family="Orbitron" font-weight="900" font-size="22" fill="#88aa66" letter-spacing="2">TARKOV</text></svg>`;
+    if (p === 'rust') return `<svg class="p11-cover-svg" viewBox="0 0 460 215" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="rs-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6d3010"/><stop offset="1" stop-color="#1a0a00"/></linearGradient></defs><rect width="460" height="215" fill="url(#rs-${id})"/><g><rect x="60" y="105" width="125" height="75" fill="#3d1a00" stroke="#cc6633" stroke-width="2"/><polygon points="60,105 122,65 185,105" fill="#5d2a00" stroke="#cc6633" stroke-width="2"/><rect x="85" y="135" width="20" height="35" fill="#1a0d00"/><rect x="125" y="125" width="35" height="22" fill="#1a0d00"/><rect x="275" y="120" width="90" height="60" fill="#3d1a00" stroke="#cc6633" stroke-width="2"/><polygon points="275,120 320,80 365,120" fill="#5d2a00" stroke="#cc6633" stroke-width="2"/><rect x="295" y="145" width="20" height="30" fill="#1a0d00"/></g><g fill="#cc6633" opacity=".4"><circle cx="40" cy="50" r="3"/><circle cx="220" cy="40" r="2"/><circle cx="400" cy="60" r="2"/><circle cx="420" cy="180" r="2"/></g></svg>`;
+    if (p === 'pubg') return `<svg class="p11-cover-svg" viewBox="0 0 460 215" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="pb-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cc9900"/><stop offset="1" stop-color="#1a1000"/></linearGradient></defs><rect width="460" height="215" fill="url(#pb-${id})"/><g transform="translate(230,107)"><polygon points="-95,30 -88,-18 -78,-30 -70,-42 -52,-48 -38,-55 -18,-60 0,-55 18,-60 38,-55 52,-48 70,-42 78,-30 88,-18 95,30 80,40 -80,40" fill="#000" opacity=".55"/><circle cx="0" cy="-22" r="38" fill="#cc8800" stroke="#1a0d00" stroke-width="2"/><rect x="-8" y="-22" width="16" height="48" fill="#1a0d00"/><circle cx="0" cy="20" r="9" fill="#1a0d00"/></g><text x="230" y="195" text-anchor="middle" font-family="Orbitron" font-weight="900" font-size="28" fill="#ffd700" opacity=".95">PUBG</text></svg>`;
+    if (p === 'atomic') return `<svg class="p11-cover-svg" viewBox="0 0 460 215" preserveAspectRatio="xMidYMid slice"><defs><radialGradient id="am-${id}" cx="50%" cy="55%" r="70%"><stop offset="0" stop-color="#cc1199"/><stop offset=".6" stop-color="#660044"/><stop offset="1" stop-color="#1a0011"/></radialGradient></defs><rect width="460" height="215" fill="url(#am-${id})"/><g transform="translate(230,108)"><ellipse cx="0" cy="0" rx="58" ry="22" fill="none" stroke="#ff66dd" stroke-width="2.5"/><ellipse cx="0" cy="0" rx="58" ry="22" fill="none" stroke="#ff66dd" stroke-width="2" transform="rotate(60)"/><ellipse cx="0" cy="0" rx="58" ry="22" fill="none" stroke="#ff66dd" stroke-width="2" transform="rotate(120)"/><circle cx="0" cy="0" r="12" fill="#ff66dd"/><circle cx="0" cy="0" r="5" fill="#fff"/></g><text x="230" y="200" text-anchor="middle" font-family="Orbitron" font-weight="900" font-size="14" fill="#ff66dd" letter-spacing="3">ATOMIC HEART</text></svg>`;
+    if (p === 'stalker') return `<svg class="p11-cover-svg" viewBox="0 0 460 215" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="st-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#558800"/><stop offset="1" stop-color="#1a3300"/></linearGradient></defs><rect width="460" height="215" fill="url(#st-${id})"/><g transform="translate(230,108)"><circle cx="0" cy="0" r="62" fill="#ffd700" opacity=".95"/><circle cx="0" cy="0" r="62" fill="none" stroke="#000" stroke-width="3"/><circle cx="0" cy="0" r="14" fill="#000"/><g fill="#000"><path d="M 0 -62 L -10 -25 L 10 -25 Z"/><path d="M 0 62 L -10 25 L 10 25 Z"/><path d="M -62 0 L -25 -10 L -25 10 Z"/><path d="M 62 0 L 25 -10 L 25 10 Z"/></g><circle cx="0" cy="0" r="6" fill="#ffd700"/></g><text x="230" y="200" text-anchor="middle" font-family="Orbitron" font-weight="900" font-size="14" fill="#ffd700" letter-spacing="2">S.T.A.L.K.E.R. 2</text></svg>`;
+    if (p === 'dayz') return `<svg class="p11-cover-svg" viewBox="0 0 460 215" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="dz-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#446600"/><stop offset="1" stop-color="#0d0d00"/></linearGradient></defs><rect width="460" height="215" fill="url(#dz-${id})"/><g transform="translate(230,90)"><ellipse cx="0" cy="0" rx="38" ry="42" fill="#7a9933"/><g fill="#000"><ellipse cx="-12" cy="-8" rx="6" ry="8"/><ellipse cx="12" cy="-8" rx="6" ry="8"/></g><g fill="#cc3333"><ellipse cx="-12" cy="-8" rx="2" ry="3"/><ellipse cx="12" cy="-8" rx="2" ry="3"/></g><path d="M -16 14 Q -8 22 0 16 Q 8 22 16 14" stroke="#000" stroke-width="2" fill="none"/><g stroke="#000" stroke-width="3" fill="#aa4422"><line x1="-10" y1="20" x2="-15" y2="30"/><line x1="-5" y1="22" x2="-3" y2="32"/><line x1="5" y1="22" x2="3" y2="32"/><line x1="10" y1="20" x2="15" y2="30"/></g></g><text x="230" y="195" text-anchor="middle" font-family="Orbitron" font-weight="900" font-size="32" fill="#aaff55" opacity=".95">DayZ</text></svg>`;
+    if (p === 'ark') return `<svg class="p11-cover-svg" viewBox="0 0 460 215" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="ar-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#006666"/><stop offset="1" stop-color="#001a1a"/></linearGradient></defs><rect width="460" height="215" fill="url(#ar-${id})"/><g transform="translate(230,130) scale(.85)"><path d="M -120 30 L -100 5 L -75 -5 L -50 -25 L -20 -38 L 15 -42 L 50 -38 L 80 -25 L 105 -10 L 125 5 L 130 30 L 100 38 L 70 42 L 30 38 L -5 42 L -45 38 L -85 42 L -120 38 Z" fill="#338866" stroke="#1a4433" stroke-width="2"/><circle cx="80" cy="-12" r="5" fill="#fff"/><circle cx="80" cy="-12" r="2.5" fill="#000"/><path d="M 90 8 L 130 -5 L 130 8 Z" fill="#338866"/><g fill="#1a4433"><circle cx="-50" cy="-15" r="3"/><circle cx="-15" cy="-25" r="3"/><circle cx="20" cy="-28" r="3"/><circle cx="55" cy="-22" r="3"/></g></g><text x="230" y="42" text-anchor="middle" font-family="Orbitron" font-weight="900" font-size="22" fill="#88ddbb" opacity=".85">ARK</text></svg>`;
+    if (p === 'dota') return `<svg class="p11-cover-svg" viewBox="0 0 460 215" preserveAspectRatio="xMidYMid slice"><defs><radialGradient id="dt-${id}" cx="50%" cy="50%" r="70%"><stop offset="0" stop-color="#b32d2d"/><stop offset="1" stop-color="#1a0000"/></radialGradient></defs><rect width="460" height="215" fill="url(#dt-${id})"/><g transform="translate(230,107)"><polygon points="0,-60 55,-18 38,55 -38,55 -55,-18" fill="#222" stroke="#ff6633" stroke-width="3"/><circle cx="0" cy="0" r="14" fill="#ff6633"/><circle cx="0" cy="0" r="6" fill="#fff"/><g fill="#ff6633"><path d="M -25 35 L -15 25 L -5 35 Z"/><path d="M 25 35 L 15 25 L 5 35 Z"/></g></g><text x="230" y="200" text-anchor="middle" font-family="Orbitron" font-weight="900" font-size="22" fill="#ff6633">DOTA 2</text></svg>`;
+    if (p === 'helldivers') return `<svg class="p11-cover-svg" viewBox="0 0 460 215" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="hd-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e69900"/><stop offset="1" stop-color="#3d2a00"/></linearGradient></defs><rect width="460" height="215" fill="url(#hd-${id})"/><g transform="translate(230,107)" fill="#ffd700"><circle cx="0" cy="0" r="42"/><polygon points="-58,-18 58,-18 58,-12 -58,-12"/><polygon points="-58,-4 58,-4 58,2 -58,2"/><polygon points="-58,10 58,10 58,16 -58,16"/></g><g transform="translate(230,107)"><circle cx="0" cy="-4" r="11" fill="#1a0d00"/><polygon points="0,-15 8,-4 -8,-4" fill="#1a0d00"/></g><text x="230" y="195" text-anchor="middle" font-family="Orbitron" font-weight="900" font-size="18" fill="#ffd700" letter-spacing="2">HELLDIVERS 2</text></svg>`;
+    return `<svg class="p11-cover-svg" viewBox="0 0 460 215" preserveAspectRatio="xMidYMid slice"><rect width="460" height="215" fill="#1a2a4a"/><text x="230" y="135" text-anchor="middle" font-size="100">${g.emoji}</text></svg>`;
+  };
+
+  // ════════════ Routing ════════════
+  P11.setSubTab = function(tab){
+    P11.SUBTAB = tab;
+    document.querySelectorAll('.p11-subtab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    if (tab === 'store') P11.renderStore();
+    else if (tab === 'library') P11.renderLibrary();
+    else if (tab === 'wishlist') P11.renderWishlist();
+  };
+
+  P11.setRegion = function(r){
+    P11.REGION = r;
+    P11.save();
+    document.querySelectorAll('.p11-region-flag').forEach(f => f.classList.toggle('active', f.dataset.region === r));
+    toast(`🌍 Регион: ${r.toUpperCase()}`, 'info');
+    if (P11.SUBTAB === 'store') P11.renderStore();
+    if (P11.SUBTAB === 'wishlist') P11.renderWishlist();
+  };
+
+  P11.setFilter = function(cat, el){
+    P11.FILTER = cat;
+    document.querySelectorAll('#sec-games .gf-btn').forEach(b => b.classList.toggle('sel', b === el));
+    P11.renderStore();
+  };
+
+  // ════════════ Render helpers ════════════
+  P11.metaCls = function(s){ if (s >= 75) return 'green'; if (s >= 50) return 'yellow'; return 'red'; };
+
+  P11.gameCard = function(g){
+    const price = g.prices[P11.REGION];
+    const old = g.oldPrices[P11.REGION];
+    const disc = Math.round((1 - price / old) * 100);
+    const inWish = P11.wishlist.has(g.id);
+    const isOwned = !!P11.owned[g.id];
+    const reviews = g.reviews.toLocaleString('ru').replace(/,/g, ' ');
+    return `
+      <div class="p11-card" data-id="${g.id}">
+        <div class="p11-cover" style="background:${g.bg}">
+          ${P11.makeCover(g)}
+          <button class="p11-wish-btn ${inWish ? 'in-list' : ''}" onclick="event.stopPropagation();P11.toggleWish('${g.id}')" title="Wishlist">${inWish ? '❤️' : '🤍'}</button>
+          <div class="p11-meta-badge ${P11.metaCls(g.metacritic)}" title="Metacritic score">${g.metacritic}</div>
+          ${disc > 0 ? `<div class="p11-disc-badge">−${disc}%</div>` : ''}
+          <div class="p11-cover-title">${g.title}</div>
+        </div>
+        <div class="p11-info">
+          <div class="p11-tags">${g.tags.map(t => `<span class="p11-tag">${t}</span>`).join('')}</div>
+          <div class="p11-publisher">${g.publisher}</div>
+          <div class="p11-genre-row">${g.genre}</div>
+          <div class="p11-reviews">⭐ ${reviews} отзывов</div>
+          <div class="p11-price-row">
+            <div>
+              ${disc > 0 ? `<div class="p11-old-price">${fmtC(old)}</div>` : ''}
+              <div class="p11-price ${disc > 0 ? 'discounted' : ''}">${fmtC(price)}</div>
+            </div>
+          </div>
+          <div class="p11-actions">
+            <button class="p11-buy-btn ${isOwned ? 'owned' : ''}" onclick="P11.buy('${g.id}')">${isOwned ? '✓ В БИБЛИОТЕКЕ' : '🛒 КУПИТЬ КЛЮЧ'}</button>
+            <button class="p11-trailer-btn" onclick="event.stopPropagation();P11.trailer('${g.id}')" title="Трейлер">▶</button>
+            <button class="p11-gift-btn" onclick="event.stopPropagation();P11.giftOpen('${g.id}')" title="Подарить">🎁</button>
+          </div>
+        </div>
+      </div>`;
+  };
+
+  P11.renderStore = function(){
+    const grid = $('games-grid');
+    if (!grid) return;
+    const list = P11.FILTER === 'all' ? P11.GAMES : P11.GAMES.filter(g => g.cat === P11.FILTER);
+    grid.innerHTML = list.map(g => P11.gameCard(g)).join('');
+  };
+
+  P11.renderLibrary = function(){
+    const grid = $('games-grid');
+    if (!grid) return;
+    const owned = Object.entries(P11.owned);
+    if (!owned.length){
+      grid.innerHTML = `<div class="p11-empty"><div class="p11-empty-icon">📚</div><div class="p11-empty-text">Библиотека пуста</div><div class="p11-empty-hint">Купите игру в магазине, и она появится здесь — с трекером часов как в Steam</div></div>`;
+      return;
+    }
+    grid.style.display = 'block';
+    grid.innerHTML = owned.map(([id, data]) => {
+      const g = P11.GAMES.find(g => g.id === id);
+      if (!g) return '';
+      const m = data.minutes || 0;
+      const hrs = (m / 60).toFixed(1);
+      const playing = !!data.playing;
+      const lp = data.lastPlayed ? new Date(data.lastPlayed).toLocaleDateString('ru') : '—';
+      return `<div class="p11-lib-card" data-id="${id}">
+        <div class="p11-lib-cover" style="background:${g.bg}">${P11.makeCover(g)}</div>
+        <div class="p11-lib-info">
+          <div class="p11-lib-title">${g.title}</div>
+          <div class="p11-lib-genre">${g.genre} · ${g.publisher}</div>
+          <div class="p11-lib-hours ${playing ? 'playing' : ''}">⏱ ${hrs} ч · ${playing ? 'В ИГРЕ' : 'последний запуск: ' + lp}</div>
+        </div>
+        <div class="p11-lib-actions">
+          <button class="p11-play-btn ${playing ? 'playing' : ''}" onclick="P11.play('${id}')">${playing ? '⏸ ОСТАНОВИТЬ' : '▶ ИГРАТЬ'}</button>
+        </div>
+      </div>`;
+    }).join('');
+  };
+
+  P11.renderWishlist = function(){
+    const grid = $('games-grid');
+    if (!grid) return;
+    grid.style.display = '';
+    const list = [...P11.wishlist].map(id => P11.GAMES.find(g => g.id === id)).filter(Boolean);
+    if (!list.length){
+      grid.innerHTML = `<div class="p11-empty"><div class="p11-empty-icon">❤️</div><div class="p11-empty-text">Wishlist пуст</div><div class="p11-empty-hint">Жми на ❤️ на карточках в магазине — мы будем оповещать о падении цены</div></div>`;
+      return;
+    }
+    grid.innerHTML = list.map(g => P11.gameCard(g)).join('');
+  };
+
+  // ════════════ Actions ════════════
+  P11.buy = function(id){
+    const g = P11.GAMES.find(g => g.id === id);
+    if (!g) return;
+    if (P11.owned[id]){ toast('Игра уже в вашей библиотеке', 'info'); P11.setSubTab('library'); return; }
+    const price = g.prices[P11.REGION];
+    if (P11.getBal() < price){ toast('Недостаточно средств! Пополни баланс.', 'error'); return; }
+    if (typeof window.updBalance === 'function') window.updBalance(-price);
+    P11.owned[id] = { minutes: 0, lastPlayed: Date.now(), ownedAt: Date.now() };
+    P11.wishlist.delete(id);
+    P11.save();
+    toast(`✓ ${g.title} в вашей библиотеке!`, 'success');
+    if (typeof window.openWithdrawGeneric === 'function') {
+      try { window.openWithdrawGeneric('🎮', g.title + ' — STEAM KEY', 'ИГРА', '#1b9aff', price); } catch(e) {}
+    }
+    P11.renderStore();
+  };
+
+  P11.toggleWish = function(id){
+    const g = P11.GAMES.find(g => g.id === id);
+    if (!g) return;
+    if (P11.wishlist.has(id)){ P11.wishlist.delete(id); toast('Удалено из Wishlist', 'info'); }
+    else { P11.wishlist.add(id); toast(`❤️ ${g.title} в Wishlist — будем следить за ценой`, 'success'); }
+    P11.save();
+    if (P11.SUBTAB === 'store') P11.renderStore();
+    if (P11.SUBTAB === 'wishlist') P11.renderWishlist();
+  };
+
+  // ─── Trailer ───
+  P11.trailer = function(id){
+    const g = P11.GAMES.find(g => g.id === id);
+    if (!g) return;
+    $('p11-tr-title').textContent = g.title + ' — Official Trailer';
+    $('p11-tr-canvas').innerHTML = P11.makeCover(g);
+    $('p11-tr-canvas').style.background = g.bg;
+    $('p11-tr-canvas').classList.remove('zoom');
+    P11._tr = { playing: false, t: 0, dur: 180 };
+    $('p11-tr-time').textContent = '0:00 / 3:00';
+    $('p11-tr-progress-bar').style.width = '0%';
+    $('p11-tr-play').classList.remove('playing');
+    $('p11-tr-overlay').classList.add('open');
+  };
+  P11.trailerToggle = function(){
+    const s = P11._tr;
+    if (!s) return;
+    s.playing = !s.playing;
+    $('p11-tr-play').classList.toggle('playing', s.playing);
+    if (s.playing){
+      $('p11-tr-canvas').classList.add('zoom');
+      s.timer = setInterval(() => {
+        s.t += 2; // 2x speedup for demo
+        if (s.t >= s.dur){ s.t = s.dur; s.playing = false; clearInterval(s.timer); $('p11-tr-play').classList.remove('playing'); }
+        const mm = (n) => { const a = Math.floor(n / 60), b = n % 60; return a + ':' + (b < 10 ? '0' : '') + b; };
+        $('p11-tr-time').textContent = mm(s.t) + ' / 3:00';
+        $('p11-tr-progress-bar').style.width = (s.t / s.dur * 100) + '%';
+      }, 250);
+    } else {
+      if (s.timer) clearInterval(s.timer);
+      $('p11-tr-canvas').classList.remove('zoom');
+    }
+  };
+  P11.trailerClose = function(){
+    if (P11._tr && P11._tr.timer) clearInterval(P11._tr.timer);
+    $('p11-tr-overlay').classList.remove('open');
+    $('p11-tr-canvas').classList.remove('zoom');
+  };
+
+  // ─── Gift ───
+  P11.giftOpen = function(id){
+    const g = P11.GAMES.find(g => g.id === id);
+    if (!g) return;
+    P11._giftId = id;
+    $('p11-gift-game-name').textContent = g.title;
+    $('p11-gift-game-cover').style.background = g.bg;
+    $('p11-gift-game-price').textContent = fmtC(g.prices[P11.REGION]);
+    $('p11-gift-friend').value = '';
+    $('p11-gift-msg').value = '';
+    $('p11-gift-overlay').classList.add('open');
+    setTimeout(() => $('p11-gift-friend').focus(), 100);
+  };
+  P11.giftSend = function(){
+    const friend = $('p11-gift-friend').value.trim();
+    if (!friend){ toast('Введи ник друга', 'error'); $('p11-gift-friend').focus(); return; }
+    const id = P11._giftId;
+    const g = P11.GAMES.find(g => g.id === id);
+    if (!g) return;
+    const price = g.prices[P11.REGION];
+    if (P11.getBal() < price){ toast('Недостаточно средств для подарка', 'error'); return; }
+    if (typeof window.updBalance === 'function') window.updBalance(-price);
+    toast(`🎁 ${g.title} → ${friend} · подарок отправлен!`, 'success');
+    P11.giftClose();
+  };
+  P11.giftClose = function(){ $('p11-gift-overlay').classList.remove('open'); };
+
+  // ─── Play (fake launch + hours tracker) ───
+  P11.play = function(id){
+    const data = P11.owned[id];
+    if (!data) return;
+    const g = P11.GAMES.find(g => g.id === id);
+    if (!g) return;
+    if (data.playing){
+      if (data.tick) clearInterval(data.tick);
+      delete data.playing;
+      delete data.tick;
+      P11.save();
+      toast(`⏸ ${g.title} остановлено`, 'info');
+      if (P11.SUBTAB === 'library') P11.renderLibrary();
+    } else {
+      toast(`🚀 Запуск ${g.title} через Steam...`, 'info');
+      setTimeout(() => {
+        toast(`▶ В игре: ${g.title}`, 'success');
+        data.playing = true;
+        data.lastPlayed = Date.now();
+        // 1 real second = 1 game minute (for demo visibility)
+        data.tick = setInterval(() => {
+          data.minutes = (data.minutes || 0) + 1;
+          if (P11.SUBTAB === 'library') P11.renderLibrary();
+          if (data.minutes % 30 === 0) P11.save();
+        }, 1000);
+        if (P11.SUBTAB === 'library') P11.renderLibrary();
+      }, 900);
+    }
+  };
+
+  // ─── Periodic price-drop notifications for Wishlist items ───
+  P11.startPriceDropTimer = function(){
+    if (P11._dropTimer) return;
+    P11._dropTimer = setInterval(() => {
+      if (P11.wishlist.size === 0) return;
+      const wlist = [...P11.wishlist];
+      const pick = wlist[Math.floor(Math.random() * wlist.length)];
+      const g = P11.GAMES.find(g => g.id === pick);
+      if (!g) return;
+      const cur = g.prices[P11.REGION];
+      const orig = g.oldPrices[P11.REGION];
+      // Don't go below 25% of original
+      if (cur <= orig * 0.25) return;
+      const drop = 5 + Math.floor(Math.random() * 15); // 5–20%
+      g.prices[P11.REGION] = Math.max(Math.floor(cur * (1 - drop / 100)), Math.floor(orig * 0.25));
+      toast(`📉 ${g.title}: цена упала на ${drop}%! Теперь ${fmtC(g.prices[P11.REGION])}`, 'success');
+      if (P11.SUBTAB === 'wishlist') P11.renderWishlist();
+      if (P11.SUBTAB === 'store') P11.renderStore();
+    }, 45000); // 45s
+  };
+
+  // ════════════ Mount ════════════
+  P11.replaceShop = function(){
+    const sec = $('sec-games');
+    if (!sec || sec.dataset.p11) return;
+    sec.dataset.p11 = '1';
+    sec.innerHTML = `
+      <div class="section-title"><h2>🕹️ МАГАЗИН ИГР</h2><p>STEAM КЛЮЧИ · 15 ИГР · МГНОВЕННАЯ ДОСТАВКА</p></div>
+      <div class="p11-subtabs">
+        <div class="p11-subtab active" data-tab="store" onclick="P11.setSubTab('store')">🛒 МАГАЗИН</div>
+        <div class="p11-subtab" data-tab="library" onclick="P11.setSubTab('library')">📚 БИБЛИОТЕКА</div>
+        <div class="p11-subtab" data-tab="wishlist" onclick="P11.setSubTab('wishlist')">❤️ WISHLIST</div>
+        <div class="p11-region-row">Регион:
+          <span class="p11-region-flag ${P11.REGION === 'ru' ? 'active' : ''}" data-region="ru" onclick="P11.setRegion('ru')">🇷🇺 RU</span>
+          <span class="p11-region-flag ${P11.REGION === 'eu' ? 'active' : ''}" data-region="eu" onclick="P11.setRegion('eu')">🇪🇺 EU</span>
+          <span class="p11-region-flag ${P11.REGION === 'ww' ? 'active' : ''}" data-region="ww" onclick="P11.setRegion('ww')">🌍 WW</span>
+        </div>
+      </div>
+      <div class="games-section-wrap">
+        <div class="games-filter">
+          <button class="gf-btn sel" onclick="P11.setFilter('all',this)">🎮 ВСЕ</button>
+          <button class="gf-btn" onclick="P11.setFilter('action',this)">⚔️ ACTION</button>
+          <button class="gf-btn" onclick="P11.setFilter('open-world',this)">🌍 ОТКРЫТЫЙ МИР</button>
+          <button class="gf-btn" onclick="P11.setFilter('shooter',this)">🔫 ШУТЕР</button>
+          <button class="gf-btn" onclick="P11.setFilter('rpg',this)">🧙 RPG</button>
+          <button class="gf-btn" onclick="P11.setFilter('survival',this)">🪓 ВЫЖИВАНИЕ</button>
+        </div>
+        <div class="games-grid" id="games-grid"></div>
+      </div>
+    `;
+    if (!$('p11-tr-overlay')){
+      document.body.insertAdjacentHTML('beforeend', `
+        <div class="p11-trailer-overlay" id="p11-tr-overlay">
+          <div class="p11-trailer-box">
+            <div class="p11-trailer-header">
+              <div class="p11-trailer-title" id="p11-tr-title">Трейлер</div>
+              <button class="p11-trailer-close" onclick="P11.trailerClose()" aria-label="Закрыть">×</button>
+            </div>
+            <div class="p11-trailer-video">
+              <div class="p11-trailer-canvas" id="p11-tr-canvas"></div>
+              <div class="p11-trailer-play-icon" id="p11-tr-play" onclick="P11.trailerToggle()"></div>
+            </div>
+            <div class="p11-trailer-controls">
+              <div class="p11-trailer-progress" id="p11-tr-progress"><div class="p11-trailer-progress-bar" id="p11-tr-progress-bar"></div></div>
+              <div class="p11-trailer-time" id="p11-tr-time">0:00 / 3:00</div>
+              <button class="p11-trailer-fs" title="На YouTube" onclick="P11.trailerClose()">📺</button>
+            </div>
+          </div>
+        </div>
+        <div class="p11-gift-overlay" id="p11-gift-overlay">
+          <div class="p11-gift-box">
+            <div class="p11-gift-h">🎁 ПОДАРИТЬ ИГРУ</div>
+            <div class="p11-gift-sub">Steam-key будет отправлен другу мгновенно</div>
+            <div class="p11-gift-game-row">
+              <div class="p11-gift-game-cover" id="p11-gift-game-cover"></div>
+              <div class="p11-gift-game-name" id="p11-gift-game-name"></div>
+              <div class="p11-gift-game-price" id="p11-gift-game-price"></div>
+            </div>
+            <input class="p11-gift-input" id="p11-gift-friend" placeholder="Ник друга (Steam / HVH.CASES)" maxlength="32">
+            <textarea class="p11-gift-input p11-gift-msg-input" id="p11-gift-msg" placeholder="Сообщение (опционально)" maxlength="200"></textarea>
+            <div class="p11-gift-btn-row">
+              <button class="p11-gift-btn-cancel" onclick="P11.giftClose()">Отмена</button>
+              <button class="p11-gift-btn-go" onclick="P11.giftSend()">🎁 ОТПРАВИТЬ ПОДАРОК</button>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+    P11.renderStore();
+    P11.startPriceDropTimer();
+  };
+
+  // Initial mount + showTab patch
+  const tryInit = () => {
+    if (!$('sec-games')){ setTimeout(tryInit, 200); return; }
+    P11.replaceShop();
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryInit);
+  else tryInit();
+
+  // Re-render on tab switch (in case games-grid was cleared)
+  const origShow = window.showTab;
+  if (typeof origShow === 'function'){
+    window.showTab = function(name, el){
+      origShow.apply(this, arguments);
+      if (name === 'games'){
+        setTimeout(() => {
+          P11.replaceShop();
+          if (P11.SUBTAB === 'store') P11.renderStore();
+          else if (P11.SUBTAB === 'library') P11.renderLibrary();
+          else if (P11.SUBTAB === 'wishlist') P11.renderWishlist();
+        }, 50);
+      }
+    };
+  }
+})();
+</script>
+<!-- PHASE11_JS_END -->
+
+
 
 
 </body>
