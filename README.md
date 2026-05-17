@@ -24,7 +24,7 @@
 - 4 темы: **DEFAULT** (cyan), **SKEET** (lime), **CYBER** (yellow neon), **NEON** (pink/violet)
 - Aurora-background, parallax stars, live-feed
 - Селектор валют ₽ / ₴ / $ с live-конвертацией
-- 12 реальных обложек игр (Rust, GTA V, Cyberpunk, Elden Ring, Tarkov, …)
+- 52 игры в магазине с реальными обложками и ценами Steam (Rust, GTA V, Cyberpunk, Baldur's Gate 3, Valheim, …)
 - Реальные лого читов (NeverLose, OneTap, Fatality, Aimware, Skeet, Primordial)
 - Cinematic mode при выпадении LEGENDARY (god-rays + vignette)
 - WebAudio звуковой движок (SFX + lo-fi синтезированная музыка)
