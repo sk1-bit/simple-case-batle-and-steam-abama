@@ -12911,6 +12911,419 @@ console.log('[P8] visual overhaul module loaded · 10 features');
 })();
 </script>
 <!-- PHASE11_JS_END -->
+<!-- PHASE12_CSS_START -->
+<style>
+/* ════════════════════════════════════════════════════════════════════
+   PHASE 12 — Real Imagery Layer
+   Replaces SVG/CSS-procedural visuals with real photographs / logos
+   from public CDNs:
+     • Steam CDN          → game store covers (Phase 11)
+     • Google Favicons    → cheat-site logos, Russian bank logos
+     • Iconify CDN        → mini-game icons, drop icons, payment logos
+   All images are overlaid on top of existing SVG; on load failure the
+   SVG remains visible. Original Phase 1-11 code is NOT modified.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Game shop covers (Phase 11) */
+.p12-cover-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+  background:#0a0e18;border-radius:inherit;}
+.p12-cover-fade{position:absolute;inset:0;background:linear-gradient(to top,
+  rgba(0,0,0,.72) 0%,rgba(0,0,0,.18) 35%,rgba(0,0,0,0) 60%);pointer-events:none;border-radius:inherit;}
+
+/* Mini-game tab icons (Phase 10) */
+.p12-mg-icon{display:inline-block;width:24px;height:24px;object-fit:contain;vertical-align:-6px;
+  margin-right:4px;background:rgba(255,255,255,.05);border-radius:5px;padding:2px;}
+
+/* Case-row site logos (Phase 1-6) */
+.p12-case-logo-wrap{position:relative;width:100%;height:100%;display:inline-block;}
+.p12-case-logo{position:absolute;inset:14%;width:72%;height:72%;object-fit:contain;display:block;
+  filter:drop-shadow(0 3px 10px rgba(0,0,0,.55));pointer-events:none;background:transparent;
+  border-radius:14%;}
+.p12-case-logo[data-bg="1"]{background:rgba(255,255,255,.92);padding:6%;border-radius:18%;}
+
+/* Drop visuals (Phase 1-6 reel + inventory + multi-open) */
+.p12-drop-svg-wrap{position:relative;display:inline-block;width:100%;height:100%;}
+.p12-drop-img{position:absolute;inset:10%;width:80%;height:80%;object-fit:contain;display:block;
+  filter:drop-shadow(0 2px 6px rgba(0,0,0,.6));pointer-events:none;background:transparent;}
+
+/* Payment / bank logos (Phase 7/9) */
+.p12-bank-tile{position:relative;}
+.p12-bank-tile .p12-bank-overlay{position:absolute;top:8px;right:10px;width:54px;height:30px;
+  object-fit:contain;background:#fff;border-radius:6px;padding:3px;
+  box-shadow:0 2px 8px rgba(0,0,0,.5);z-index:9;}
+.p12-bank-tile .p12-bank-overlay[data-shape="square"]{width:32px;height:32px;border-radius:8px;}
+.p12-sub-logo{display:inline-block;width:22px;height:14px;object-fit:contain;vertical-align:-2px;
+  margin-right:6px;background:#fff;border-radius:3px;padding:1px;}
+</style>
+<!-- PHASE12_CSS_END -->
+
+<!-- PHASE12_JS_START -->
+<script>
+(function(){
+'use strict';
+window.P12 = window.P12 || {};
+
+/* ════════════ URL builders ════════════ */
+const STEAM = function(id){
+  return 'https://cdn.cloudflare.steamstatic.com/steam/apps/' + id + '/header.jpg';
+};
+const FAV = function(domain, sz){
+  return 'https://www.google.com/s2/favicons?domain=' + domain + '&sz=' + (sz||128);
+};
+const ICONIFY = function(set, name, color){
+  // Iconify CDN — free, no rate limit, supports color param
+  let u = 'https://api.iconify.design/' + set + '/' + name + '.svg';
+  if (color) u += '?color=' + encodeURIComponent(color);
+  return u;
+};
+
+/* ════════════ Image registries ════════════ */
+
+/* Phase 11 — game store covers via Steam CDN.
+   For non-Steam games we fall back to Google favicon of the official site. */
+P12.GAME_IMG = {
+  cs2:        STEAM(730),
+  gta5:       STEAM(271590),
+  cyberpunk:  STEAM(1091500),
+  elden:      STEAM(1245620),
+  rdr2:       STEAM(1174180),
+  witcher3:   STEAM(292030),
+  tarkov:     FAV('escapefromtarkov.com', 256),
+  rust:       STEAM(252490),
+  pubg:       STEAM(578080),
+  atomic:     STEAM(668580),
+  stalker2:   STEAM(1643320),
+  dayz:       STEAM(221100),
+  ark:        STEAM(346110),
+  dota:       STEAM(570),
+  helldivers2:STEAM(553850)
+};
+
+/* Phase 10 — mini-game tab icons (Iconify Noto / Game-Icons sets) */
+P12.MG_ICON = {
+  dc: ICONIFY('noto', 'game-die'),
+  hl: ICONIFY('noto', 'spade-suit'),
+  wh: ICONIFY('noto', 'ferris-wheel'),
+  tw: ICONIFY('game-icons', 'stone-tower', '#ffd700'),
+  lb: ICONIFY('noto', 'rocket'),
+  sl: ICONIFY('noto', 'slot-machine'),
+  kn: ICONIFY('game-icons', 'poker-hand', '#ffd700')
+};
+
+/* Phase 1-6 — case-row icons.
+   Cheat sites: Google favicon of real site (works for all popular sites).
+   Generic categories: Iconify mdi/noto. */
+P12.CASE_LOGO = {
+  // Cheat sites
+  neverlose: FAV('neverlose.cc', 128),
+  onetap:    FAV('onetap.su', 128),
+  fatality:  FAV('fatality.win', 128),
+  skeet:     FAV('skeet.cc', 128),
+  aimware:   FAV('aimware.net', 128),
+  hyperix:   FAV('hyperix.io', 128),
+  osiris:    FAV('osiris.ac', 128),
+  // Generic categories
+  knife:     ICONIFY('game-icons', 'plain-dagger', '#ffd700'),
+  awp:       ICONIFY('game-icons', 'crosshair', '#ffd700'),
+  rifle:     ICONIFY('mdi', 'pistol', '#ffd700'),
+  premium:   ICONIFY('noto', 'crown'),
+  // Config-case aliases
+  cfg_nl:    FAV('neverlose.cc', 128),
+  cfg_aw:    FAV('aimware.net', 128),
+  cfg_hpx:   FAV('hyperix.io', 128),
+  cfg_lw:    FAV('skeet.cc', 128)
+};
+
+/* Some favicons render best on a white pill background; flag them with data-bg=1 */
+P12.CASE_LOGO_BG = {
+  neverlose:1, onetap:1, fatality:1, skeet:1, aimware:1, hyperix:1, osiris:1,
+  cfg_nl:1, cfg_aw:1, cfg_hpx:1, cfg_lw:1
+};
+
+/* Phase 1-6 — drop icons (Iconify mdi/noto/simple-icons) */
+P12.DROP_GENERIC = {
+  d_frame:   ICONIFY('mdi', 'image-frame', '#9ed5ff'),
+  d_sticker: ICONIFY('mdi', 'sticker-emoji', '#ff77a4'),
+  d_badge:   ICONIFY('mdi', 'badge-account-horizontal', '#ffb84d'),
+  d_cfg:     ICONIFY('mdi', 'cog', '#9ed5ff'),
+  d_lua:     ICONIFY('simple-icons', 'lua', '#aaccff'),
+  d_key:     ICONIFY('noto', 'old-key'),
+  d_token:   ICONIFY('noto', 'coin'),
+  d_gem:     ICONIFY('noto', 'gem-stone'),
+  d_diamond: ICONIFY('noto', 'gem-stone'),
+  d_sub:     ICONIFY('noto', 'crown'),
+  d_skull:   ICONIFY('noto', 'skull'),
+  d_knife:   ICONIFY('game-icons', 'plain-dagger', '#e9eef5'),
+  d_rifle:   ICONIFY('mdi', 'pistol', '#e9eef5'),
+  d_awp:     ICONIFY('game-icons', 'binoculars', '#e9eef5'),
+  d_gloves:  ICONIFY('game-icons', 'gloves', '#ff9b3d')
+};
+
+/* Phase 7/9 — payment method logos.
+   Card brands: Iconify logos: set (full-color logos).
+   Russian banks: Google favicons (Sber/Tinkoff/Alfa/VTB not on simple-icons).
+   Crypto: Iconify logos/simple-icons. */
+P12.BANK_LOGO = {
+  // Card brands
+  visa:        ICONIFY('logos', 'visa'),
+  mastercard:  ICONIFY('logos', 'mastercard'),
+  maestro:     ICONIFY('logos', 'maestro'),
+  mir:         FAV('mironline.ru', 128),
+  // Russian banks
+  sber:        FAV('sber.ru', 128),
+  sberbank:    FAV('sber.ru', 128),
+  tinkoff:     FAV('tbank.ru', 128),
+  tbank:       FAV('tbank.ru', 128),
+  alfa:        FAV('alfabank.ru', 128),
+  alfabank:    FAV('alfabank.ru', 128),
+  vtb:         FAV('vtb.ru', 128),
+  // Ukrainian / EU
+  mono:        FAV('monobank.ua', 128),
+  monobank:    FAV('monobank.ua', 128),
+  // E-wallets
+  yoomoney:    FAV('yoomoney.ru', 128),
+  qiwi:        FAV('qiwi.com', 128),
+  // Mobile payment
+  apple:       ICONIFY('logos', 'apple-pay'),
+  applepay:    ICONIFY('logos', 'apple-pay'),
+  google:      ICONIFY('logos', 'google-pay'),
+  googlepay:   ICONIFY('logos', 'google-pay'),
+  gpay:        ICONIFY('logos', 'google-pay'),
+  // Crypto
+  bitcoin:     ICONIFY('logos', 'bitcoin'),
+  btc:         ICONIFY('logos', 'bitcoin'),
+  ethereum:    ICONIFY('logos', 'ethereum'),
+  eth:         ICONIFY('logos', 'ethereum'),
+  usdt:        ICONIFY('simple-icons', 'tether', '#26a17b'),
+  tether:      ICONIFY('simple-icons', 'tether', '#26a17b'),
+  bnb:         ICONIFY('simple-icons', 'binance', '#f0b90b'),
+  binance:     ICONIFY('simple-icons', 'binance', '#f0b90b'),
+  // Other
+  telegram:    ICONIFY('logos', 'telegram'),
+  tgstars:     ICONIFY('logos', 'telegram'),
+  stars:       ICONIFY('noto', 'sparkles'),
+  sbp:         ICONIFY('noto', 'high-voltage'),
+  cryptocurrency: ICONIFY('logos', 'bitcoin')
+};
+
+/* Square-shape logos use a 32×32 box instead of 54×30 rectangle */
+P12.BANK_SHAPE = {
+  apple:'square', applepay:'square', google:'square', googlepay:'square', gpay:'square',
+  sber:'square', sberbank:'square', tinkoff:'square', tbank:'square', alfa:'square',
+  alfabank:'square', vtb:'square', mono:'square', monobank:'square',
+  yoomoney:'square', qiwi:'square', mir:'square',
+  bitcoin:'square', btc:'square', ethereum:'square', eth:'square',
+  usdt:'square', tether:'square', bnb:'square', binance:'square',
+  telegram:'square', tgstars:'square', stars:'square', sbp:'square',
+  cryptocurrency:'square'
+};
+
+/* ════════════ Helpers ════════════ */
+P12.imgEl = function(src, alt, cls, extraAttrs){
+  alt = (alt||'').replace(/"/g,'&quot;');
+  return '<img src="'+src+'" alt="'+alt+'" class="'+(cls||'p12-cover-img')+'" ' +
+    (extraAttrs||'') + ' loading="lazy" ' +
+    'onerror="this.style.display=\'none\';this.dataset.failed=\'1\';"/>';
+};
+
+/* ════════════ Phase 11 — Game shop covers ════════════ */
+P12.patchPhase11 = function(){
+  if (!window.P11 || !P11.makeCover || P11.__p12_patched) return false;
+  P11.__p12_patched = true;
+  const origMake = P11.makeCover;
+  P11.makeCover = function(g){
+    const src = P12.GAME_IMG[g.id];
+    const svg = origMake.call(P11, g);
+    if (!src) return svg;
+    return svg + P12.imgEl(src, g.title) + '<span class="p12-cover-fade"></span>';
+  };
+  try { if (P11.renderStore)    P11.renderStore(); }    catch(e){}
+  try { if (P11.renderLibrary)  P11.renderLibrary(); }  catch(e){}
+  try { if (P11.renderWishlist) P11.renderWishlist(); } catch(e){}
+  return true;
+};
+
+/* ════════════ Phase 10 — Mini-game tab icons ════════════ */
+P12.patchPhase10 = function(){
+  document.querySelectorAll('.p10-tab').forEach(function(tab){
+    const m = tab.className.match(/mg-tab-(\w+)/);
+    if (!m) return;
+    const id = m[1];
+    const src = P12.MG_ICON[id];
+    if (!src) return;
+    if (tab.querySelector('.p12-mg-icon')) return;
+    const svg = tab.querySelector('svg');
+    if (!svg) return;
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = id;
+    img.className = 'p12-mg-icon';
+    img.loading = 'lazy';
+    const svgClone = svg.cloneNode(true);
+    img.onerror = function(){ try { this.replaceWith(svgClone); } catch(e){} };
+    svg.replaceWith(img);
+  });
+};
+
+/* ════════════ Phase 1-6 — Case row site logos ════════════ */
+P12.patchCaseIcons = function(){
+  if (typeof window.caseIconHtml !== 'function' || window.__p12_caseIcon_patched) return false;
+  window.__p12_caseIcon_patched = true;
+  const orig = window.caseIconHtml;
+  window.caseIconHtml = function(key){
+    const inner = orig.call(this, key);
+    const src = P12.CASE_LOGO[key];
+    if (!src) return inner;
+    const bg = P12.CASE_LOGO_BG[key] ? ' data-bg="1"' : '';
+    return '<span class="p12-case-logo-wrap">' + inner +
+           '<img src="'+src+'" alt="'+key+'" class="p12-case-logo"'+bg+
+           ' loading="lazy" onerror="this.style.display=\'none\';"/></span>';
+  };
+  try { if (typeof window.renderCases === 'function') window.renderCases(); } catch(e){}
+  return true;
+};
+
+/* ════════════ Phase 1-6 — Drop icons (reel + inventory) ════════════ */
+P12.patchDropIcons = function(){
+  if (typeof window.iconHtml !== 'function' || window.__p12_iconHtml_patched) return false;
+  window.__p12_iconHtml_patched = true;
+  const orig = window.iconHtml;
+  window.iconHtml = function(key, sizeCls){
+    const inner = orig.call(this, key, sizeCls);
+    const src = P12.DROP_GENERIC[key];
+    if (!src) return inner;
+    return '<span class="p12-drop-svg-wrap">' + inner +
+           '<img src="'+src+'" alt="'+key+'" class="p12-drop-img" loading="lazy" ' +
+           'onerror="this.style.display=\'none\';"/></span>';
+  };
+  return true;
+};
+
+/* ════════════ Phase 7/9 — Payment method tile logos ════════════ */
+P12.METHOD_TEXT_MAP = {
+  // textContent prefix → bank key
+  'Visa / Mastercard': 'visa',
+  'СБП': 'sbp',
+  'Криптовалюта': 'bitcoin',
+  'QIWI / ЮMoney': 'yoomoney',
+  'Google Pay': 'gpay',
+  'Apple Pay': 'apple',
+  'Монобанк': 'mono',
+  'Telegram Stars': 'tgstars',
+  'Yandex Pay': 'yoomoney'
+};
+
+P12._methodKeyFor = function(tile){
+  // 1. Class hints: gpay-method, apay-method, mono-method, tgstars-method
+  const cls = tile.className||'';
+  // Check tgstars first so it doesn't get hijacked by sites that also append
+  // `mono-method-after` to Telegram Stars tile for sibling-styling purposes
+  if (/\btgstars-method\b/.test(cls)) return 'tgstars';
+  if (/\bgpay-method\b/.test(cls))    return 'gpay';
+  if (/\bapay-method\b/.test(cls))    return 'apple';
+  if (/\bmono-method\b/.test(cls))    return 'mono';
+  // 2. Text content match
+  const txt = (tile.textContent || '').trim();
+  for (const k in P12.METHOD_TEXT_MAP) {
+    if (txt.indexOf(k) >= 0) return P12.METHOD_TEXT_MAP[k];
+  }
+  // 3. Data attribute / id fallback
+  if (tile.dataset && tile.dataset.method) {
+    return tile.dataset.method.toLowerCase().replace(/[^a-z]/g,'');
+  }
+  return null;
+};
+
+P12.patchPaymentLogos = function(){
+  document.querySelectorAll('.method-item').forEach(function(tile){
+    if (tile.querySelector('.p12-bank-overlay')) return;
+    const key = P12._methodKeyFor(tile);
+    if (!key) return;
+    const src = P12.BANK_LOGO[key];
+    if (!src) return;
+    tile.classList.add('p12-bank-tile');
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = key;
+    img.className = 'p12-bank-overlay';
+    if (P12.BANK_SHAPE[key]) img.dataset.shape = P12.BANK_SHAPE[key];
+    img.loading = 'lazy';
+    img.onerror = function(){ this.style.display='none'; };
+    tile.appendChild(img);
+  });
+  // Sub-method items (Visa/MC/Maestro/MIR/BTC/ETH/USDT/BNB)
+  document.querySelectorAll('.sub-method-item').forEach(function(tile){
+    if (tile.querySelector('.p12-sub-logo')) return;
+    // Parse onclick attr: selSubMethod(this,'visa','card')
+    const oc = tile.getAttribute('onclick') || '';
+    const m  = oc.match(/selSubMethod\s*\(\s*this\s*,\s*['"]([^'"]+)['"]/);
+    if (!m) return;
+    const subKey = m[1].toLowerCase().replace(/[^a-z]/g,'');
+    const src = P12.BANK_LOGO[subKey];
+    if (!src) return;
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = subKey;
+    img.className = 'p12-sub-logo';
+    img.loading = 'lazy';
+    img.onerror = function(){ this.style.display='none'; };
+    tile.insertBefore(img, tile.firstChild);
+  });
+};
+
+/* ════════════ Boot ════════════ */
+function tryPatch(){
+  try { P12.patchPhase11();     } catch(e){}
+  try { P12.patchPhase10();     } catch(e){}
+  try { P12.patchCaseIcons();   } catch(e){}
+  try { P12.patchDropIcons();   } catch(e){}
+  try { P12.patchPaymentLogos();} catch(e){}
+}
+
+if (document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', tryPatch);
+} else {
+  tryPatch();
+}
+setTimeout(tryPatch,  500);
+setTimeout(tryPatch, 1500);
+setTimeout(tryPatch, 3000);
+setTimeout(tryPatch, 6000);
+
+// Re-apply Phase 10 patch after every tab switch
+if (window.setMgTab && !window.__p12_setMgTab_patched){
+  window.__p12_setMgTab_patched = true;
+  const orig = window.setMgTab;
+  window.setMgTab = function(){
+    const r = orig.apply(this, arguments);
+    setTimeout(function(){ try { P12.patchPhase10(); } catch(e){} }, 60);
+    return r;
+  };
+}
+
+// MutationObserver — catch lazy-rendered payment tiles & dynamic mini-game tabs
+try {
+  const mo = new MutationObserver(function(){
+    try { P12.patchPaymentLogos(); } catch(e){}
+    try { P12.patchPhase10(); }     catch(e){}
+  });
+  mo.observe(document.body, {childList:true, subtree:true});
+} catch(e){}
+
+console.log('[P12] Real Imagery layer initialized', {
+  games: Object.keys(P12.GAME_IMG).length,
+  mg:    Object.keys(P12.MG_ICON).length,
+  cases: Object.keys(P12.CASE_LOGO).length,
+  drops: Object.keys(P12.DROP_GENERIC).length,
+  banks: Object.keys(P12.BANK_LOGO).length
+});
+})();
+</script>
+<!-- PHASE12_JS_END -->
+
+
+
+
 
 
 
