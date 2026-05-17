@@ -1,0 +1,1114 @@
+<!-- PHASE10_CSS_START -->
+<style>
+/* ══════════════════════════════════════════════════════════════════
+   PHASE 10 — MORE MINI-GAMES (DICE · HiLo · WHEEL · TOWER · LIMBO · SLOTS · KENO)
+   Independent of Phase 1-9; adds 7 new tabs to existing #mg-hub.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Shared layout used by all P10 panes */
+.p10-pane{padding:14px;max-width:780px;margin:0 auto}
+.p10-card{background:rgba(10,18,36,.95);border:1px solid rgba(0,200,255,.18);border-radius:14px;padding:18px}
+.p10-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:center;margin:10px 0}
+.p10-label{font-size:.6rem;letter-spacing:2px;color:var(--frost-dim,#7a90b8);margin-bottom:4px}
+.p10-val{font-size:1.1rem;font-weight:800;color:#fff}
+.p10-val.green{color:#00cc77}
+.p10-val.gold{color:#ffd700}
+.p10-val.red{color:#ff5470}
+.p10-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.p10-stat{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.05);padding:10px;border-radius:10px;text-align:center}
+.p10-bet-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center}
+.p10-bet-input{
+  background:rgba(0,0,0,.5);border:1px solid rgba(0,200,255,.3);border-radius:8px;
+  padding:8px 12px;color:#fff;font-weight:700;width:120px;text-align:center;font-size:1rem;
+}
+.p10-quick{
+  background:rgba(0,200,255,.1);border:1px solid rgba(0,200,255,.3);color:#9be4ff;
+  padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:700;font-size:.75rem;
+  letter-spacing:1px;transition:all .15s;
+}
+.p10-quick:hover{background:rgba(0,200,255,.25);transform:translateY(-1px)}
+.p10-go-btn{
+  width:100%;padding:14px;border:none;border-radius:12px;font-family:'Orbitron',sans-serif;
+  font-weight:900;letter-spacing:2px;font-size:.95rem;cursor:pointer;
+  background:linear-gradient(135deg,#00cc77,#008f55);color:#fff;
+  box-shadow:0 6px 18px rgba(0,204,119,.4);transition:all .2s;margin-top:8px;text-transform:uppercase;
+}
+.p10-go-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,204,119,.55)}
+.p10-go-btn:disabled{opacity:.45;cursor:not-allowed;filter:grayscale(.5)}
+.p10-go-btn.gold{background:linear-gradient(135deg,#ffd700,#ff9900);color:#1a0e00;box-shadow:0 6px 18px rgba(255,215,0,.4)}
+.p10-go-btn.danger{background:linear-gradient(135deg,#ff4060,#a01030);box-shadow:0 6px 18px rgba(255,64,96,.4)}
+.p10-result{
+  text-align:center;font-family:'Orbitron',sans-serif;font-weight:900;letter-spacing:2px;
+  margin-top:12px;min-height:28px;font-size:1rem;
+}
+.p10-result.win{color:#00ff88;text-shadow:0 0 12px rgba(0,255,136,.55)}
+.p10-result.lose{color:#ff5470;text-shadow:0 0 12px rgba(255,84,112,.45)}
+
+/* ── DICE ── */
+.p10-dice-slider-wrap{position:relative;height:36px;margin:18px 6px}
+.p10-dice-slider-track{
+  position:absolute;inset:14px 0;border-radius:8px;
+  background:linear-gradient(90deg,#ff5470 0%,#ff5470 var(--p10-thr,50%),#00cc77 var(--p10-thr,50%),#00cc77 100%);
+}
+.p10-dice-slider-track.under{
+  background:linear-gradient(90deg,#00cc77 0%,#00cc77 var(--p10-thr,50%),#ff5470 var(--p10-thr,50%),#ff5470 100%);
+}
+.p10-dice-slider{
+  position:relative;width:100%;height:100%;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer;
+}
+.p10-dice-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;width:28px;height:28px;border-radius:50%;
+  background:#fff;border:3px solid #00c8ff;box-shadow:0 4px 12px rgba(0,200,255,.5);cursor:grab;margin-top:0;
+}
+.p10-dice-slider::-moz-range-thumb{
+  width:28px;height:28px;border-radius:50%;background:#fff;border:3px solid #00c8ff;
+  box-shadow:0 4px 12px rgba(0,200,255,.5);cursor:grab;
+}
+.p10-dice-tick-row{display:flex;justify-content:space-between;font-size:.65rem;color:var(--frost-dim,#7a90b8);margin-top:4px;padding:0 4px}
+.p10-dice-mode-row{display:flex;gap:8px;justify-content:center;margin:10px 0}
+.p10-dice-mode{
+  padding:8px 16px;border-radius:8px;background:rgba(0,0,0,.35);border:1px solid rgba(0,200,255,.2);
+  color:#9be4ff;cursor:pointer;font-weight:800;font-size:.75rem;letter-spacing:1.5px;transition:all .15s;
+}
+.p10-dice-mode.sel{background:linear-gradient(135deg,#00c8ff,#0080ff);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(0,200,255,.45)}
+.p10-dice-roll{
+  margin:14px auto 8px;width:100px;height:100px;border-radius:18px;
+  background:linear-gradient(135deg,#1a2540,#0a121f);border:2px solid rgba(0,200,255,.4);
+  display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;
+  font-size:2.3rem;font-weight:900;color:#fff;letter-spacing:-2px;
+  box-shadow:0 0 30px rgba(0,200,255,.25) inset;position:relative;
+}
+.p10-dice-roll.rolling{animation:p10DiceShake .12s infinite}
+.p10-dice-roll.win{color:#00ff88;border-color:#00ff88;box-shadow:0 0 32px rgba(0,255,136,.55) inset}
+.p10-dice-roll.lose{color:#ff5470;border-color:#ff5470;box-shadow:0 0 32px rgba(255,84,112,.45) inset}
+@keyframes p10DiceShake{0%{transform:translate(-2px,1px) rotate(-1deg)}50%{transform:translate(2px,-1px) rotate(1deg)}100%{transform:translate(-1px,0) rotate(0)}}
+
+/* ── HiLo ── */
+.p10-hilo-card{
+  width:160px;height:230px;margin:14px auto;perspective:900px;position:relative;
+}
+.p10-hilo-card-inner{
+  width:100%;height:100%;position:relative;transition:transform .5s;transform-style:preserve-3d;
+}
+.p10-hilo-card.flipping .p10-hilo-card-inner{animation:p10CardFlip .6s ease-in-out}
+@keyframes p10CardFlip{0%{transform:rotateY(0)}50%{transform:rotateY(90deg)}100%{transform:rotateY(0)}}
+.p10-hilo-card-face{
+  position:absolute;inset:0;border-radius:14px;background:#fff;color:#1a1a1a;
+  display:flex;flex-direction:column;justify-content:space-between;padding:14px;
+  box-shadow:0 8px 30px rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.4);
+}
+.p10-hilo-rank{font-family:'Orbitron',sans-serif;font-size:2.4rem;font-weight:900;line-height:1}
+.p10-hilo-rank.red{color:#d9344c}
+.p10-hilo-suit{font-size:2.2rem;text-align:right}
+.p10-hilo-center{font-size:4.5rem;text-align:center;line-height:1;margin-top:6px}
+.p10-hilo-info-row{display:flex;justify-content:space-around;gap:10px;margin:10px 0}
+.p10-hilo-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:420px;margin:14px auto 0}
+.p10-hilo-btn{
+  padding:14px;border:none;border-radius:12px;font-family:'Orbitron',sans-serif;font-weight:900;
+  letter-spacing:2px;font-size:.85rem;cursor:pointer;color:#fff;transition:all .15s;text-transform:uppercase;
+}
+.p10-hilo-btn.up{background:linear-gradient(135deg,#00cc77,#008f55);box-shadow:0 6px 18px rgba(0,204,119,.4)}
+.p10-hilo-btn.down{background:linear-gradient(135deg,#ff4060,#a01030);box-shadow:0 6px 18px rgba(255,64,96,.4)}
+.p10-hilo-btn:hover:not(:disabled){transform:translateY(-2px)}
+.p10-hilo-btn:disabled{opacity:.4;cursor:not-allowed}
+.p10-hilo-cash{margin-top:10px}
+
+/* ── WHEEL ── */
+.p10-wheel-wrap{
+  position:relative;width:280px;height:280px;margin:18px auto;
+}
+.p10-wheel{
+  width:100%;height:100%;border-radius:50%;
+  transition:transform 4.2s cubic-bezier(.22,.61,.36,1);
+  box-shadow:0 0 0 6px rgba(0,200,255,.2),0 0 40px rgba(0,200,255,.35),0 12px 40px rgba(0,0,0,.55);
+}
+.p10-wheel-pointer{
+  position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:0;height:0;
+  border-left:14px solid transparent;border-right:14px solid transparent;border-top:24px solid #ffd700;
+  filter:drop-shadow(0 4px 6px rgba(0,0,0,.6));z-index:2;
+}
+.p10-wheel-center{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:60px;height:60px;border-radius:50%;background:radial-gradient(circle,#1a2540,#000);
+  border:3px solid rgba(0,200,255,.5);box-shadow:0 0 18px rgba(0,200,255,.5) inset;z-index:1;
+  display:flex;align-items:center;justify-content:center;color:#9be4ff;font-weight:900;font-family:'Orbitron',sans-serif;font-size:.7rem;letter-spacing:1px;
+}
+.p10-wheel-mults{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:8px;max-width:480px;margin:8px auto}
+.p10-wheel-mult{
+  padding:8px 6px;border-radius:8px;text-align:center;font-family:'Orbitron',sans-serif;
+  font-weight:900;font-size:.72rem;letter-spacing:1px;color:#fff;
+  border:1px solid transparent;cursor:pointer;transition:all .15s;
+}
+.p10-wheel-mult.sel{outline:2px solid #fff;transform:translateY(-2px)}
+.p10-wheel-mult.c-orange{background:linear-gradient(135deg,#ff9900,#ff6600)}
+.p10-wheel-mult.c-green{background:linear-gradient(135deg,#00cc77,#008f55)}
+.p10-wheel-mult.c-blue{background:linear-gradient(135deg,#00c8ff,#0080ff)}
+.p10-wheel-mult.c-purple{background:linear-gradient(135deg,#aa66ff,#6633ff)}
+.p10-wheel-mult.c-red{background:linear-gradient(135deg,#ff4060,#a01030)}
+.p10-wheel-mult.c-gold{background:linear-gradient(135deg,#ffd700,#cc9900);color:#1a0e00}
+
+/* ── TOWER ── */
+.p10-tower{display:flex;flex-direction:column-reverse;gap:6px;max-width:380px;margin:14px auto}
+.p10-tower-floor{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+  padding:6px;border-radius:10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.05);
+  transition:all .25s;
+}
+.p10-tower-floor.cur{border-color:rgba(0,200,255,.5);box-shadow:0 0 18px rgba(0,200,255,.25)}
+.p10-tower-floor.done{opacity:.55}
+.p10-tower-cell{
+  aspect-ratio:1.5;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#1a2540,#0a121f);border-radius:8px;cursor:pointer;
+  font-size:1.4rem;border:1px solid rgba(255,255,255,.06);transition:all .15s;
+}
+.p10-tower-floor:not(.cur) .p10-tower-cell{cursor:not-allowed;opacity:.6}
+.p10-tower-floor.cur .p10-tower-cell:hover{background:linear-gradient(135deg,#243056,#101a30);transform:translateY(-1px)}
+.p10-tower-cell.safe{background:linear-gradient(135deg,#00cc77,#008f55)!important;color:#fff}
+.p10-tower-cell.mine{background:linear-gradient(135deg,#ff4060,#a01030)!important;color:#fff;animation:p10TowerBoom .35s ease-out}
+@keyframes p10TowerBoom{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+.p10-tower-mult-col{
+  font-family:'Orbitron',sans-serif;font-weight:900;letter-spacing:1px;font-size:.75rem;
+  color:#9be4ff;text-align:center;padding:6px;background:rgba(0,200,255,.08);border-radius:6px;
+}
+
+/* ── LIMBO ── */
+.p10-limbo-board{
+  margin:14px auto;width:100%;max-width:420px;height:170px;
+  background:radial-gradient(ellipse at center,rgba(0,200,255,.12),transparent 60%),#0a121f;
+  border:1px solid rgba(0,200,255,.2);border-radius:14px;
+  display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;
+}
+.p10-limbo-result{
+  font-family:'Orbitron',sans-serif;font-weight:900;font-size:3.2rem;color:#fff;
+  text-shadow:0 0 20px rgba(0,200,255,.55);letter-spacing:-1px;transition:all .3s;
+}
+.p10-limbo-result.rolling{animation:p10LimboRoll .08s infinite}
+.p10-limbo-result.win{color:#00ff88;text-shadow:0 0 30px rgba(0,255,136,.7)}
+.p10-limbo-result.lose{color:#ff5470;text-shadow:0 0 30px rgba(255,84,112,.5)}
+@keyframes p10LimboRoll{0%{transform:translateY(-3px)}50%{transform:translateY(3px)}100%{transform:translateY(-3px)}}
+.p10-limbo-target-row{display:flex;align-items:center;gap:8px;justify-content:center;margin:10px 0}
+.p10-limbo-target{
+  background:rgba(0,0,0,.5);border:1px solid rgba(0,200,255,.3);border-radius:8px;
+  padding:8px 14px;color:#fff;font-weight:900;font-family:'Orbitron',sans-serif;font-size:1.1rem;width:130px;text-align:center;
+}
+.p10-limbo-chance{font-size:.7rem;color:var(--frost-dim,#7a90b8);letter-spacing:1.5px;font-weight:800}
+
+/* ── SLOTS ── */
+.p10-slots-machine{
+  margin:14px auto;max-width:380px;background:linear-gradient(135deg,#3a1a4a,#1a0a2a);
+  border:3px solid #ffd700;border-radius:18px;padding:18px;
+  box-shadow:0 0 0 6px rgba(0,0,0,.4),0 12px 30px rgba(0,0,0,.5);
+}
+.p10-slots-screen{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:#000;padding:12px;border-radius:10px;border:2px inset #222;
+}
+.p10-slots-reel{
+  height:90px;overflow:hidden;background:radial-gradient(circle at center,#1a0a2a,#000);
+  border-radius:6px;display:flex;align-items:center;justify-content:center;
+  font-size:2.6rem;line-height:1;position:relative;
+}
+.p10-slots-reel-track{display:flex;flex-direction:column;align-items:center;transition:transform .8s cubic-bezier(.22,.61,.36,1)}
+.p10-slots-reel-item{height:90px;display:flex;align-items:center;justify-content:center;font-size:2.6rem}
+.p10-slots-reel.spinning .p10-slots-reel-track{transition-duration:.2s}
+.p10-slots-payline{
+  text-align:center;margin-top:10px;font-family:'Orbitron',sans-serif;font-size:.7rem;
+  color:#ffd700;letter-spacing:2px;font-weight:900;
+}
+.p10-slots-paytable{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;font-size:.7rem;
+}
+.p10-slots-pay-row{background:rgba(0,0,0,.35);padding:5px 10px;border-radius:6px;display:flex;justify-content:space-between}
+.p10-slots-pay-row .sym{font-size:1rem}
+.p10-slots-pay-row .mult{color:#ffd700;font-weight:900}
+
+/* ── KENO ── */
+.p10-keno-grid{
+  display:grid;grid-template-columns:repeat(8,1fr);gap:5px;max-width:520px;margin:14px auto;
+}
+.p10-keno-cell{
+  aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.45);border:1px solid rgba(0,200,255,.18);border-radius:6px;
+  cursor:pointer;font-weight:800;font-size:.85rem;color:#9be4ff;
+  transition:all .12s;
+}
+.p10-keno-cell:hover{border-color:#00c8ff;background:rgba(0,200,255,.15)}
+.p10-keno-cell.pick{background:linear-gradient(135deg,#00c8ff,#0080ff);color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(0,200,255,.4)}
+.p10-keno-cell.draw{background:linear-gradient(135deg,#aa66ff,#6633ff);color:#fff;border-color:transparent}
+.p10-keno-cell.hit{background:linear-gradient(135deg,#ffd700,#ff9900);color:#1a0e00;border-color:transparent;box-shadow:0 0 16px rgba(255,215,0,.6);animation:p10KenoHit .35s ease-out}
+@keyframes p10KenoHit{0%{transform:scale(.7)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+.p10-keno-controls-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.p10-keno-paytable{
+  display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:10px 0;font-size:.65rem;
+}
+.p10-keno-paytable .item{
+  background:rgba(0,0,0,.35);padding:4px 10px;border-radius:6px;color:#9be4ff;font-weight:800;letter-spacing:.5px;
+}
+.p10-keno-paytable .item b{color:#ffd700;margin-left:6px}
+
+/* Mobile */
+@media(max-width:520px){
+  .p10-wheel-wrap{width:230px;height:230px}
+  .p10-hilo-card{width:130px;height:190px}
+  .p10-keno-grid{grid-template-columns:repeat(8,1fr);gap:3px}
+  .p10-stats{grid-template-columns:repeat(3,1fr);gap:6px}
+}
+</style>
+<!-- PHASE10_CSS_END -->
+
+<!-- PHASE10_JS_START -->
+<script>
+(function(){
+  if (window._p10Init) return;
+  window._p10Init = true;
+  const P10 = window.P10 = {};
+
+  // ─── Helpers ─────────────────────────────────────────────────────
+  const fmt = (n)=> (Math.round(n)).toLocaleString('ru').replace(/\s/g,' ') + ' ₽';
+  const $ = (id)=> document.getElementById(id);
+  const el = (html)=>{ const d=document.createElement('div'); d.innerHTML=html.trim(); return d.firstChild; };
+  function getBal(){
+    if (typeof window.balance === 'number') return window.balance;
+    const v = $('balance-val'); if (v){ const n = parseInt((v.textContent||'').replace(/\D/g,''),10); if (!isNaN(n)) return n; }
+    return 0;
+  }
+  function changeBal(delta){
+    try{ if (typeof window.updBalance === 'function') { window.updBalance(delta); return; } }catch(_){}
+    // fallback — set displayed value
+    const v = $('balance-val');
+    if (v){
+      const cur = getBal();
+      const next = Math.max(0, cur + delta);
+      v.textContent = next.toLocaleString('ru').replace(/\s/g,' ');
+      try{ window.balance = next; }catch(_){}
+    }
+  }
+  function toast(msg, type){
+    try{ if (typeof window.showToast === 'function') window.showToast(msg, type||'info'); return; }catch(_){}
+    console.log('[toast]', type, msg);
+  }
+  function sfx(name){
+    try{ if (window.HVH_AUDIO && typeof window.HVH_AUDIO['sfx'+name] === 'function') window.HVH_AUDIO['sfx'+name](); }catch(_){}
+  }
+  function checkBet(bet){
+    if (!bet || bet < 10) { toast('Минимальная ставка — 10 ₽','error'); return false; }
+    if (bet > getBal()) { toast('Недостаточно средств! Пополни баланс.','error'); return false; }
+    return true;
+  }
+  function rand(min, max){ return Math.random() * (max - min) + min; }
+  function randi(min, max){ return Math.floor(rand(min, max+1)); }
+
+  // ─── Inject tabs + content panes into mg-hub ─────────────────────
+  P10.injectTabs = function(){
+    const tabsRow = document.querySelector('.mg-tabs');
+    const hub = document.querySelector('.mg-hub');
+    if (!tabsRow || !hub) return false;
+    if (document.querySelector('.mg-tab-dc')) return true; // already injected
+
+    const tabs = [
+      ['dc','DICE',  '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.4" fill="#000"/><circle cx="16" cy="16" r="1.4" fill="#000"/><circle cx="16" cy="8" r="1.4" fill="#000"/><circle cx="8" cy="16" r="1.4" fill="#000"/><circle cx="12" cy="12" r="1.4" fill="#000"/></svg>'],
+      ['hl','HiLo',  '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="3" width="13" height="18" rx="2"/><path d="M9 8l2 2h-1.5v3h-1V10H7l2-2zM15 16l-2-2h1.5v-3h1v3H17l-2 2z" fill="#000"/></svg>'],
+      ['wh','WHEEL', '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 2v10l8.7 5C19 20 16 22 12 22S5 20 3.3 17L12 12V2z" fill="rgba(0,0,0,.3)"/><circle cx="12" cy="12" r="2" fill="#fff"/></svg>'],
+      ['tw','TOWER', '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="3" width="12" height="3" rx="1"/><rect x="6" y="8" width="12" height="3" rx="1"/><rect x="6" y="13" width="12" height="3" rx="1"/><rect x="6" y="18" width="12" height="3" rx="1"/><circle cx="9" cy="9.5" r=".8" fill="#000"/><circle cx="15" cy="14.5" r=".8" fill="#000"/></svg>'],
+      ['lb','LIMBO', '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 20h20M3 18l5-8 4 5 4-3 5 5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="11" r="1.5"/></svg>'],
+      ['sl','SLOTS', '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="6" width="20" height="12" rx="2"/><rect x="5" y="9" width="3.5" height="6" fill="#000"/><rect x="10.2" y="9" width="3.5" height="6" fill="#000"/><rect x="15.5" y="9" width="3.5" height="6" fill="#000"/><circle cx="6.75" cy="12" r=".7" fill="#fff"/><circle cx="11.95" cy="12" r=".7" fill="#fff"/><circle cx="17.25" cy="12" r=".7" fill="#fff"/></svg>'],
+      ['kn','KENO',  '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="5" r="1.6"/><circle cx="12" cy="5" r="1.6"/><circle cx="19" cy="5" r="1.6"/><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="1.6"/><circle cx="5" cy="19" r="1.6"/><circle cx="12" cy="19" r="1.6"/><circle cx="19" cy="19" r="1.6"/></svg>'],
+    ];
+
+    tabs.forEach(([id, label, icon])=>{
+      const t = document.createElement('div');
+      t.className = 'mg-tab mg-tab-'+id+' p10-tab';
+      t.setAttribute('onclick', "setMgTab('"+id+"',this)");
+      t.innerHTML = icon + ' ' + label;
+      tabsRow.appendChild(t);
+
+      if (!$('mg-'+id)){
+        const c = document.createElement('div');
+        c.id = 'mg-'+id;
+        c.className = 'mg-content';
+        hub.appendChild(c);
+      }
+    });
+
+    // Patch setMgTab to lazy-build P10 panes (once)
+    if (!window.__p10_setMgTab_patched){
+      window.__p10_setMgTab_patched = true;
+      const orig = window.setMgTab;
+      window.setMgTab = function(id, elx){
+        try{ orig(id, elx); }catch(e){}
+        const builders = {
+          dc: P10.buildDice, hl: P10.buildHiLo, wh: P10.buildWheel,
+          tw: P10.buildTower, lb: P10.buildLimbo, sl: P10.buildSlots, kn: P10.buildKeno,
+        };
+        const fn = builders[id];
+        if (fn) try{ fn(); }catch(e){ console.warn('P10 build',id,e); }
+      };
+    }
+    return true;
+  };
+
+  // ════════════════ GAME 1: DICE ═══════════════════════════════════
+  P10.DICE = { bet:100, threshold:50, mode:'over' };
+  P10.buildDice = function(){
+    const c = $('mg-dc'); if (!c || c.dataset.built) return;
+    c.dataset.built = '1';
+    c.innerHTML = `
+      <div class="p10-pane">
+        <div class="p10-card">
+          <div class="p10-stats">
+            <div class="p10-stat"><div class="p10-label">ШАНС</div><div class="p10-val" id="dc-chance">50%</div></div>
+            <div class="p10-stat"><div class="p10-label">МНОЖИТЕЛЬ</div><div class="p10-val gold" id="dc-mult">x1.98</div></div>
+            <div class="p10-stat"><div class="p10-label">ВЫИГРЫШ</div><div class="p10-val green" id="dc-win">198 ₽</div></div>
+          </div>
+          <div class="p10-dice-roll" id="dc-roll">50.00</div>
+          <div class="p10-dice-mode-row">
+            <div class="p10-dice-mode" data-mode="under" onclick="P10.diceMode('under',this)">МЕНЬШЕ ↓</div>
+            <div class="p10-dice-mode sel" data-mode="over" onclick="P10.diceMode('over',this)">БОЛЬШЕ ↑</div>
+          </div>
+          <div class="p10-dice-slider-wrap">
+            <div class="p10-dice-slider-track" id="dc-track" style="--p10-thr:50%"></div>
+            <input class="p10-dice-slider" type="range" min="2" max="98" value="50" id="dc-slider" oninput="P10.diceSlide(this.value)">
+          </div>
+          <div class="p10-dice-tick-row"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
+          <div class="p10-bet-row" style="margin-top:14px">
+            <input class="p10-bet-input" id="dc-bet" type="number" min="10" max="50000" value="100" oninput="P10.diceBetInput()">
+            <button class="p10-quick" onclick="P10.diceBet(100)">100</button>
+            <button class="p10-quick" onclick="P10.diceBet(500)">500</button>
+            <button class="p10-quick" onclick="P10.diceBet(1000)">1K</button>
+            <button class="p10-quick" onclick="P10.diceBet(getBal2())">MAX</button>
+          </div>
+          <button class="p10-go-btn" id="dc-go" onclick="P10.diceRoll()">🎲 БРОСИТЬ КОСТЬ</button>
+          <div class="p10-result" id="dc-result"></div>
+        </div>
+      </div>`;
+    P10.diceUpdate();
+  };
+  P10.diceMode = function(mode, elx){
+    P10.DICE.mode = mode;
+    document.querySelectorAll('#mg-dc .p10-dice-mode').forEach(x=>x.classList.toggle('sel', x.dataset.mode===mode));
+    $('dc-track').classList.toggle('under', mode==='under');
+    P10.diceUpdate();
+  };
+  P10.diceSlide = function(v){ P10.DICE.threshold = +v; P10.diceUpdate(); };
+  P10.diceBet = function(v){ P10.DICE.bet = Math.max(10, Math.min(50000, v|0)); $('dc-bet').value = P10.DICE.bet; P10.diceUpdate(); };
+  P10.diceBetInput = function(){ const v = (+($('dc-bet').value)||0); P10.DICE.bet = Math.max(10, Math.min(50000, v)); P10.diceUpdate(); };
+  P10.diceUpdate = function(){
+    const t = P10.DICE.threshold;
+    const chance = (P10.DICE.mode === 'over') ? (100 - t) : t;
+    const mult = chance > 0 ? (99 / chance) : 1;
+    const win = Math.floor(P10.DICE.bet * mult);
+    $('dc-chance').textContent = chance.toFixed(0) + '%';
+    $('dc-mult').textContent = 'x' + mult.toFixed(2);
+    $('dc-win').textContent = fmt(win);
+    $('dc-track').style.setProperty('--p10-thr', t+'%');
+  };
+  P10.diceRoll = function(){
+    if (!checkBet(P10.DICE.bet)) return;
+    changeBal(-P10.DICE.bet); sfx('Click');
+    const btn = $('dc-go'); btn.disabled = true;
+    const roll = $('dc-roll'); roll.classList.add('rolling'); roll.classList.remove('win','lose');
+    const dur = 1200;
+    const start = performance.now();
+    const finalRoll = +(Math.random()*100).toFixed(2);
+    function tick(now){
+      const p = Math.min(1, (now-start)/dur);
+      const cur = (Math.random()*100).toFixed(2);
+      roll.textContent = cur;
+      if (p < 1) requestAnimationFrame(tick);
+      else {
+        roll.textContent = finalRoll.toFixed(2);
+        roll.classList.remove('rolling');
+        const t = P10.DICE.threshold;
+        const isWin = (P10.DICE.mode === 'over') ? (finalRoll > t) : (finalRoll < t);
+        if (isWin){
+          const chance = (P10.DICE.mode === 'over') ? (100 - t) : t;
+          const mult = 99 / chance;
+          const win = Math.floor(P10.DICE.bet * mult);
+          changeBal(win);
+          roll.classList.add('win');
+          $('dc-result').textContent = `✓ ${finalRoll.toFixed(2)} · x${mult.toFixed(2)} · +${fmt(win)}`;
+          $('dc-result').className = 'p10-result win';
+          sfx('Win');
+        } else {
+          roll.classList.add('lose');
+          $('dc-result').textContent = `✗ ${finalRoll.toFixed(2)} · -${fmt(P10.DICE.bet)}`;
+          $('dc-result').className = 'p10-result lose';
+          sfx('Click');
+        }
+        btn.disabled = false;
+      }
+    }
+    requestAnimationFrame(tick);
+  };
+
+  // ════════════════ GAME 2: HiLo ═══════════════════════════════════
+  P10.HL = { bet:100, current:7, multiplier:1, playing:false, history:[] };
+  const HL_SUITS = ['♠','♥','♦','♣'];
+  const HL_RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+  function hlCard(rank){
+    const suit = HL_SUITS[randi(0,3)];
+    const isRed = (suit==='♥' || suit==='♦');
+    return { rank, suit, isRed, val: HL_RANKS.indexOf(rank) };
+  }
+  P10.buildHiLo = function(){
+    const c = $('mg-hl'); if (!c || c.dataset.built) return;
+    c.dataset.built = '1';
+    c.innerHTML = `
+      <div class="p10-pane">
+        <div class="p10-card">
+          <div class="p10-stats">
+            <div class="p10-stat"><div class="p10-label">МНОЖИТЕЛЬ</div><div class="p10-val gold" id="hl-mult">x1.00</div></div>
+            <div class="p10-stat"><div class="p10-label">СТАВКА</div><div class="p10-val" id="hl-bet-val">100 ₽</div></div>
+            <div class="p10-stat"><div class="p10-label">К ВЫИГРЫШУ</div><div class="p10-val green" id="hl-win-val">100 ₽</div></div>
+          </div>
+          <div class="p10-hilo-card" id="hl-card">
+            <div class="p10-hilo-card-inner">
+              <div class="p10-hilo-card-face">
+                <div class="p10-hilo-rank" id="hl-rank">7</div>
+                <div class="p10-hilo-center" id="hl-suit">♠</div>
+                <div class="p10-hilo-suit" id="hl-suit-2">♠</div>
+              </div>
+            </div>
+          </div>
+          <div class="p10-bet-row" style="margin-top:8px">
+            <input class="p10-bet-input" id="hl-bet" type="number" min="10" max="50000" value="100" oninput="P10.hlBetInput()">
+            <button class="p10-quick" onclick="P10.hlBet(100)">100</button>
+            <button class="p10-quick" onclick="P10.hlBet(500)">500</button>
+            <button class="p10-quick" onclick="P10.hlBet(1000)">1K</button>
+          </div>
+          <div class="p10-hilo-buttons">
+            <button class="p10-hilo-btn down" id="hl-down" onclick="P10.hlPick('down')">↓ МЕНЬШЕ</button>
+            <button class="p10-hilo-btn up"   id="hl-up"   onclick="P10.hlPick('up')">↑ БОЛЬШЕ</button>
+          </div>
+          <button class="p10-go-btn gold p10-hilo-cash" id="hl-cash" onclick="P10.hlCash()" disabled>💰 ЗАБРАТЬ ВЫИГРЫШ</button>
+          <div class="p10-result" id="hl-result"></div>
+        </div>
+      </div>`;
+    P10.hlReset();
+  };
+  P10.hlBet = function(v){ P10.HL.bet = Math.max(10, Math.min(50000, v|0)); $('hl-bet').value = P10.HL.bet; P10.hlUpdate(); };
+  P10.hlBetInput = function(){ P10.HL.bet = Math.max(10, Math.min(50000, (+$('hl-bet').value)||0)); P10.hlUpdate(); };
+  P10.hlReset = function(){
+    const start = hlCard(HL_RANKS[randi(2,10)]); // middle-ish start card
+    P10.HL.current = start.val;
+    P10.HL.multiplier = 1;
+    P10.HL.playing = false;
+    const rEl = $('hl-rank'), sEl = $('hl-suit'), s2El = $('hl-suit-2');
+    if (rEl){ rEl.textContent = HL_RANKS[start.val]; rEl.classList.toggle('red', start.isRed); }
+    if (sEl) sEl.textContent = start.suit;
+    if (s2El) s2El.textContent = start.suit;
+    $('hl-up').disabled = false; $('hl-down').disabled = false; $('hl-cash').disabled = true;
+    $('hl-result').textContent = ''; $('hl-result').className = 'p10-result';
+    P10.hlUpdate();
+  };
+  P10.hlUpdate = function(){
+    $('hl-mult').textContent = 'x' + P10.HL.multiplier.toFixed(2);
+    $('hl-bet-val').textContent = fmt(P10.HL.bet);
+    $('hl-win-val').textContent = fmt(P10.HL.bet * P10.HL.multiplier);
+  };
+  P10.hlPick = function(dir){
+    if (!P10.HL.playing){
+      if (!checkBet(P10.HL.bet)) return;
+      changeBal(-P10.HL.bet); sfx('Click');
+      P10.HL.playing = true;
+    }
+    // Calculate chance and multiplier for this pick
+    const cur = P10.HL.current;
+    const nCardsBelow = cur;        // ranks below (0..cur-1 = cur values)
+    const nCardsAbove = 12 - cur;   // ranks above (cur+1..12)
+    let pickProb;
+    if (dir==='up') pickProb = (nCardsAbove)/13;
+    else pickProb = (nCardsBelow)/13;
+    if (pickProb <= 0) pickProb = 1/13;
+    const stepMult = (0.97 / pickProb);
+    // Draw new card
+    const newVal = randi(0,12);
+    const newCard = hlCard(HL_RANKS[newVal]);
+    const cardEl = $('hl-card'); cardEl.classList.add('flipping');
+    setTimeout(()=>{
+      const rEl = $('hl-rank'), sEl = $('hl-suit'), s2El = $('hl-suit-2');
+      if (rEl){ rEl.textContent = HL_RANKS[newVal]; rEl.classList.toggle('red', newCard.isRed); }
+      if (sEl) sEl.textContent = newCard.suit;
+      if (s2El) s2El.textContent = newCard.suit;
+    }, 300);
+    setTimeout(()=> cardEl.classList.remove('flipping'), 600);
+    let success;
+    if (newVal === cur) success = false;
+    else if (dir==='up') success = newVal > cur;
+    else success = newVal < cur;
+    if (success){
+      P10.HL.multiplier *= stepMult;
+      P10.HL.current = newVal;
+      $('hl-cash').disabled = false;
+      P10.hlUpdate();
+      $('hl-result').textContent = `✓ ${HL_RANKS[newVal]} · x${P10.HL.multiplier.toFixed(2)}`;
+      $('hl-result').className = 'p10-result win';
+      sfx('Win');
+    } else {
+      $('hl-up').disabled = true; $('hl-down').disabled = true; $('hl-cash').disabled = true;
+      $('hl-result').textContent = `✗ ${HL_RANKS[newVal]} · -${fmt(P10.HL.bet)}`;
+      $('hl-result').className = 'p10-result lose';
+      sfx('Click');
+      setTimeout(()=> P10.hlReset(), 1700);
+    }
+  };
+  P10.hlCash = function(){
+    if (!P10.HL.playing) return;
+    const win = Math.floor(P10.HL.bet * P10.HL.multiplier);
+    changeBal(win); sfx('Win');
+    $('hl-result').textContent = `💰 +${fmt(win)} (x${P10.HL.multiplier.toFixed(2)})`;
+    $('hl-result').className = 'p10-result win';
+    toast(`💰 Выигрыш ${fmt(win)} (x${P10.HL.multiplier.toFixed(2)})`,'success');
+    setTimeout(()=> P10.hlReset(), 1500);
+  };
+
+  // ════════════════ GAME 3: WHEEL ══════════════════════════════════
+  // 16 segments, each with a multiplier; user bets on a colour.
+  const WH_SEGS = [
+    {m:1.5,c:'orange'},{m:0,c:'red'},{m:2,c:'green'},{m:1.5,c:'orange'},
+    {m:5,c:'purple'},{m:1.5,c:'orange'},{m:2,c:'green'},{m:0,c:'red'},
+    {m:1.5,c:'orange'},{m:50,c:'gold'},{m:2,c:'green'},{m:1.5,c:'orange'},
+    {m:5,c:'purple'},{m:0,c:'red'},{m:2,c:'green'},{m:1.5,c:'orange'},
+  ];
+  const WH_COLORS = { orange:'#ff7700', red:'#ff4060', green:'#00cc77', purple:'#aa66ff', gold:'#ffd700', blue:'#00c8ff' };
+  P10.WH = { bet:100, target:'orange', spinning:false, rot:0 };
+  P10.buildWheel = function(){
+    const c = $('mg-wh'); if (!c || c.dataset.built) return;
+    c.dataset.built = '1';
+    const n = WH_SEGS.length;
+    const ang = 360 / n;
+    let grad = '';
+    for (let i=0; i<n; i++){
+      const a1 = i*ang, a2 = (i+1)*ang;
+      grad += `${WH_COLORS[WH_SEGS[i].c]} ${a1}deg ${a2}deg, `;
+    }
+    grad = grad.replace(/,\s*$/, '');
+    c.innerHTML = `
+      <div class="p10-pane">
+        <div class="p10-card">
+          <div class="p10-stats">
+            <div class="p10-stat"><div class="p10-label">СТАВКА</div><div class="p10-val" id="wh-bet-val">100 ₽</div></div>
+            <div class="p10-stat"><div class="p10-label">МНОЖИТЕЛЬ</div><div class="p10-val gold" id="wh-mult">x1.5</div></div>
+            <div class="p10-stat"><div class="p10-label">К ВЫИГРЫШУ</div><div class="p10-val green" id="wh-win">150 ₽</div></div>
+          </div>
+          <div class="p10-wheel-wrap">
+            <div class="p10-wheel-pointer"></div>
+            <div class="p10-wheel" id="wh-wheel" style="background:conic-gradient(${grad})"></div>
+            <div class="p10-wheel-center">SPIN</div>
+          </div>
+          <div class="p10-wheel-mults">
+            <div class="p10-wheel-mult c-orange sel" data-c="orange" data-m="1.5" onclick="P10.whPick('orange',this)">x1.5<br><small>40%</small></div>
+            <div class="p10-wheel-mult c-green" data-c="green" data-m="2" onclick="P10.whPick('green',this)">x2<br><small>25%</small></div>
+            <div class="p10-wheel-mult c-purple" data-c="purple" data-m="5" onclick="P10.whPick('purple',this)">x5<br><small>12.5%</small></div>
+            <div class="p10-wheel-mult c-gold" data-c="gold" data-m="50" onclick="P10.whPick('gold',this)">x50<br><small>6.25%</small></div>
+          </div>
+          <div class="p10-bet-row" style="margin-top:6px">
+            <input class="p10-bet-input" id="wh-bet" type="number" min="10" max="50000" value="100" oninput="P10.whBetInput()">
+            <button class="p10-quick" onclick="P10.whBet(100)">100</button>
+            <button class="p10-quick" onclick="P10.whBet(500)">500</button>
+            <button class="p10-quick" onclick="P10.whBet(1000)">1K</button>
+          </div>
+          <button class="p10-go-btn" id="wh-spin" onclick="P10.whSpin()">🎡 КРУТИТЬ КОЛЕСО</button>
+          <div class="p10-result" id="wh-result"></div>
+        </div>
+      </div>`;
+    P10.whUpdate();
+  };
+  P10.whPick = function(c, elx){
+    P10.WH.target = c;
+    document.querySelectorAll('#mg-wh .p10-wheel-mult').forEach(x=>x.classList.remove('sel'));
+    elx.classList.add('sel');
+    P10.whUpdate();
+  };
+  P10.whBet = function(v){ P10.WH.bet = Math.max(10, Math.min(50000, v|0)); $('wh-bet').value = P10.WH.bet; P10.whUpdate(); };
+  P10.whBetInput = function(){ P10.WH.bet = Math.max(10, Math.min(50000, (+$('wh-bet').value)||0)); P10.whUpdate(); };
+  P10.whUpdate = function(){
+    $('wh-bet-val').textContent = fmt(P10.WH.bet);
+    const segMult = WH_SEGS.find(s=>s.c===P10.WH.target);
+    const m = segMult ? segMult.m : 0;
+    $('wh-mult').textContent = 'x' + m;
+    $('wh-win').textContent = fmt(P10.WH.bet * m);
+  };
+  P10.whSpin = function(){
+    if (P10.WH.spinning) return;
+    if (!checkBet(P10.WH.bet)) return;
+    changeBal(-P10.WH.bet); sfx('Click');
+    P10.WH.spinning = true; $('wh-spin').disabled = true;
+    const n = WH_SEGS.length, ang = 360 / n;
+    const winSeg = randi(0, n-1);
+    const targetAngle = (n - winSeg - 0.5) * ang; // center of segment under pointer
+    const spins = 5;
+    const newRot = P10.WH.rot + spins*360 + targetAngle - (P10.WH.rot % 360);
+    P10.WH.rot = newRot;
+    const wheel = $('wh-wheel');
+    wheel.style.transform = `rotate(${newRot}deg)`;
+    setTimeout(()=>{
+      const seg = WH_SEGS[winSeg];
+      const m = seg.c === P10.WH.target ? seg.m : 0;
+      if (m > 0){
+        const win = Math.floor(P10.WH.bet * m);
+        changeBal(win);
+        $('wh-result').textContent = `✓ Выпал ${seg.c.toUpperCase()} · x${m} · +${fmt(win)}`;
+        $('wh-result').className = 'p10-result win';
+        sfx('Win');
+      } else {
+        $('wh-result').textContent = `✗ Выпал ${seg.c.toUpperCase()} · -${fmt(P10.WH.bet)}`;
+        $('wh-result').className = 'p10-result lose';
+      }
+      P10.WH.spinning = false; $('wh-spin').disabled = false;
+    }, 4400);
+  };
+
+  // ════════════════ GAME 4: TOWER ══════════════════════════════════
+  const TW_FLOORS = 6;
+  const TW_COLS = 3;
+  P10.TW = { bet:100, floor:0, plan:[], multipliers:[], playing:false };
+  P10.buildTower = function(){
+    const c = $('mg-tw'); if (!c || c.dataset.built) return;
+    c.dataset.built = '1';
+    // each floor: 1 mine, 2 safe; multiplier per floor (cumulative)
+    // mult per floor ≈ 1.4x (with house edge): (3/2)*0.97 ≈ 1.455
+    P10.TW.multipliers = [];
+    let m = 1;
+    for (let i=0; i<TW_FLOORS; i++){ m *= 1.455; P10.TW.multipliers.push(+m.toFixed(2)); }
+    let floorsHtml = '';
+    for (let f = 0; f < TW_FLOORS; f++){
+      let cells = '';
+      for (let i=0; i<TW_COLS; i++){
+        cells += `<div class="p10-tower-cell" data-f="${f}" data-i="${i}" onclick="P10.twPick(${f},${i})">?</div>`;
+      }
+      floorsHtml = `<div class="p10-tower-floor" data-f="${f}">${cells}<div class="p10-tower-mult-col">x${P10.TW.multipliers[f]}</div></div>` + floorsHtml;
+    }
+    c.innerHTML = `
+      <div class="p10-pane">
+        <div class="p10-card">
+          <div class="p10-stats">
+            <div class="p10-stat"><div class="p10-label">ЭТАЖ</div><div class="p10-val" id="tw-floor">0 / ${TW_FLOORS}</div></div>
+            <div class="p10-stat"><div class="p10-label">МНОЖИТЕЛЬ</div><div class="p10-val gold" id="tw-mult">x1.00</div></div>
+            <div class="p10-stat"><div class="p10-label">К ВЫИГРЫШУ</div><div class="p10-val green" id="tw-win">100 ₽</div></div>
+          </div>
+          <div class="p10-tower" id="tw-tower">${floorsHtml}</div>
+          <div class="p10-bet-row" style="margin-top:14px">
+            <input class="p10-bet-input" id="tw-bet" type="number" min="10" max="50000" value="100" oninput="P10.twBetInput()">
+            <button class="p10-quick" onclick="P10.twBet(100)">100</button>
+            <button class="p10-quick" onclick="P10.twBet(500)">500</button>
+            <button class="p10-quick" onclick="P10.twBet(1000)">1K</button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+            <button class="p10-go-btn" id="tw-start" onclick="P10.twStart()">🏗 НАЧАТЬ ВОСХОЖДЕНИЕ</button>
+            <button class="p10-go-btn gold" id="tw-cash" onclick="P10.twCash()" disabled>💰 ЗАБРАТЬ</button>
+          </div>
+          <div class="p10-result" id="tw-result"></div>
+        </div>
+      </div>`;
+    P10.twUpdate();
+  };
+  P10.twBet = function(v){ P10.TW.bet = Math.max(10, Math.min(50000, v|0)); $('tw-bet').value = P10.TW.bet; P10.twUpdate(); };
+  P10.twBetInput = function(){ P10.TW.bet = Math.max(10, Math.min(50000, (+$('tw-bet').value)||0)); P10.twUpdate(); };
+  P10.twUpdate = function(){
+    const mult = P10.TW.floor === 0 ? 1 : P10.TW.multipliers[P10.TW.floor-1];
+    $('tw-mult').textContent = 'x' + mult.toFixed(2);
+    $('tw-floor').textContent = P10.TW.floor + ' / ' + TW_FLOORS;
+    $('tw-win').textContent = fmt(P10.TW.bet * mult);
+  };
+  P10.twStart = function(){
+    if (!checkBet(P10.TW.bet)) return;
+    changeBal(-P10.TW.bet); sfx('Click');
+    P10.TW.playing = true;
+    P10.TW.floor = 0;
+    P10.TW.plan = [];
+    for (let f=0; f<TW_FLOORS; f++) P10.TW.plan.push(randi(0,TW_COLS-1)); // mine col
+    document.querySelectorAll('#tw-tower .p10-tower-floor').forEach((row,i)=>{
+      row.classList.remove('cur','done');
+      row.querySelectorAll('.p10-tower-cell').forEach(c=>{ c.classList.remove('safe','mine'); c.textContent='?'; });
+    });
+    const f0 = document.querySelector('#tw-tower .p10-tower-floor[data-f="0"]');
+    if (f0) f0.classList.add('cur');
+    $('tw-start').disabled = true; $('tw-cash').disabled = true;
+    $('tw-result').textContent = ''; $('tw-result').className = 'p10-result';
+    P10.twUpdate();
+  };
+  P10.twPick = function(f, i){
+    if (!P10.TW.playing || f !== P10.TW.floor) return;
+    const row = document.querySelector(`#tw-tower .p10-tower-floor[data-f="${f}"]`);
+    const cells = row.querySelectorAll('.p10-tower-cell');
+    const minePos = P10.TW.plan[f];
+    if (i === minePos){
+      // Boom
+      cells[i].classList.add('mine'); cells[i].textContent = '💣';
+      for (let k=0; k<TW_COLS; k++) if (k !== i){ cells[k].classList.add('safe'); cells[k].textContent='✓'; }
+      P10.TW.playing = false;
+      $('tw-start').disabled = false; $('tw-cash').disabled = true;
+      $('tw-result').textContent = `💥 Мина на этаже ${f+1} · -${fmt(P10.TW.bet)}`;
+      $('tw-result').className = 'p10-result lose';
+      sfx('Click');
+    } else {
+      cells[i].classList.add('safe'); cells[i].textContent = '✓';
+      P10.TW.floor = f + 1;
+      row.classList.remove('cur'); row.classList.add('done');
+      if (P10.TW.floor < TW_FLOORS){
+        const next = document.querySelector(`#tw-tower .p10-tower-floor[data-f="${P10.TW.floor}"]`);
+        if (next) next.classList.add('cur');
+      }
+      sfx('Click');
+      $('tw-cash').disabled = false;
+      P10.twUpdate();
+      if (P10.TW.floor === TW_FLOORS){
+        // Top reached — auto cash-out
+        P10.twCash();
+      }
+    }
+  };
+  P10.twCash = function(){
+    if (!P10.TW.playing && P10.TW.floor < TW_FLOORS) return;
+    if (P10.TW.floor === 0) return;
+    const mult = P10.TW.multipliers[P10.TW.floor-1];
+    const win = Math.floor(P10.TW.bet * mult);
+    changeBal(win); sfx('Win');
+    P10.TW.playing = false;
+    $('tw-start').disabled = false; $('tw-cash').disabled = true;
+    $('tw-result').textContent = `💰 ${P10.TW.floor} этажей · x${mult.toFixed(2)} · +${fmt(win)}`;
+    $('tw-result').className = 'p10-result win';
+    toast(`💰 +${fmt(win)} (x${mult.toFixed(2)})`,'success');
+  };
+
+  // ════════════════ GAME 5: LIMBO ══════════════════════════════════
+  P10.LB = { bet:100, target:2 };
+  P10.buildLimbo = function(){
+    const c = $('mg-lb'); if (!c || c.dataset.built) return;
+    c.dataset.built = '1';
+    c.innerHTML = `
+      <div class="p10-pane">
+        <div class="p10-card">
+          <div class="p10-stats">
+            <div class="p10-stat"><div class="p10-label">ШАНС</div><div class="p10-val" id="lb-chance">49.5%</div></div>
+            <div class="p10-stat"><div class="p10-label">МНОЖИТЕЛЬ</div><div class="p10-val gold" id="lb-mult">x2.00</div></div>
+            <div class="p10-stat"><div class="p10-label">К ВЫИГРЫШУ</div><div class="p10-val green" id="lb-win">200 ₽</div></div>
+          </div>
+          <div class="p10-limbo-board">
+            <div class="p10-limbo-result" id="lb-result-num">x 1.00</div>
+          </div>
+          <div class="p10-limbo-target-row">
+            <span class="p10-limbo-chance">TARGET ≥</span>
+            <input class="p10-limbo-target" id="lb-target" type="number" min="1.01" max="1000" step="0.1" value="2.00" oninput="P10.lbTargetInput()">
+            <span class="p10-limbo-chance">×</span>
+          </div>
+          <div class="p10-bet-row">
+            <input class="p10-bet-input" id="lb-bet" type="number" min="10" max="50000" value="100" oninput="P10.lbBetInput()">
+            <button class="p10-quick" onclick="P10.lbBet(100)">100</button>
+            <button class="p10-quick" onclick="P10.lbBet(500)">500</button>
+            <button class="p10-quick" onclick="P10.lbBet(1000)">1K</button>
+            <button class="p10-quick" onclick="P10.lbT(2)">×2</button>
+            <button class="p10-quick" onclick="P10.lbT(10)">×10</button>
+            <button class="p10-quick" onclick="P10.lbT(100)">×100</button>
+          </div>
+          <button class="p10-go-btn" id="lb-go" onclick="P10.lbRoll()">⚡ LIMBO ROLL</button>
+          <div class="p10-result" id="lb-result"></div>
+        </div>
+      </div>`;
+    P10.lbUpdate();
+  };
+  P10.lbBet = function(v){ P10.LB.bet = Math.max(10, Math.min(50000, v|0)); $('lb-bet').value = P10.LB.bet; P10.lbUpdate(); };
+  P10.lbBetInput = function(){ P10.LB.bet = Math.max(10, Math.min(50000, (+$('lb-bet').value)||0)); P10.lbUpdate(); };
+  P10.lbT = function(t){ P10.LB.target = t; $('lb-target').value = t.toFixed(2); P10.lbUpdate(); };
+  P10.lbTargetInput = function(){ P10.LB.target = Math.max(1.01, Math.min(1000, (+$('lb-target').value)||1.01)); P10.lbUpdate(); };
+  P10.lbUpdate = function(){
+    const t = P10.LB.target;
+    const chance = (99 / t);
+    $('lb-chance').textContent = chance.toFixed(2)+'%';
+    $('lb-mult').textContent = 'x' + t.toFixed(2);
+    $('lb-win').textContent = fmt(P10.LB.bet * t);
+  };
+  P10.lbRoll = function(){
+    if (!checkBet(P10.LB.bet)) return;
+    changeBal(-P10.LB.bet); sfx('Click');
+    $('lb-go').disabled = true;
+    const num = $('lb-result-num'); num.classList.remove('win','lose'); num.classList.add('rolling');
+    // Provably-fair-ish: roll = 99 / (1 - r) clamped, where r in [0,1)
+    const r = Math.random();
+    const finalRoll = Math.min(1000000, Math.max(1, 99 / (1 - r * 0.99)));
+    const dur = 1100; const start = performance.now();
+    function tick(now){
+      const p = Math.min(1, (now-start)/dur);
+      const cur = (1 + Math.random()*40).toFixed(2);
+      num.textContent = 'x ' + cur;
+      if (p < 1) requestAnimationFrame(tick);
+      else {
+        num.classList.remove('rolling');
+        num.textContent = 'x ' + finalRoll.toFixed(2);
+        const t = P10.LB.target;
+        if (finalRoll >= t){
+          const win = Math.floor(P10.LB.bet * t);
+          changeBal(win);
+          num.classList.add('win');
+          $('lb-result').textContent = `✓ x${finalRoll.toFixed(2)} ≥ x${t.toFixed(2)} · +${fmt(win)}`;
+          $('lb-result').className = 'p10-result win';
+          sfx('Win');
+        } else {
+          num.classList.add('lose');
+          $('lb-result').textContent = `✗ x${finalRoll.toFixed(2)} < x${t.toFixed(2)} · -${fmt(P10.LB.bet)}`;
+          $('lb-result').className = 'p10-result lose';
+        }
+        $('lb-go').disabled = false;
+      }
+    }
+    requestAnimationFrame(tick);
+  };
+
+  // ════════════════ GAME 6: SLOTS ══════════════════════════════════
+  const SL_SYMBOLS = ['🔫','🔪','💣','🎯','💎','👑'];
+  const SL_PAYS    = { '🔫':2, '🔪':5, '💣':10, '🎯':20, '💎':50, '👑':100 };
+  P10.SL = { bet:100, spinning:false };
+  P10.buildSlots = function(){
+    const c = $('mg-sl'); if (!c || c.dataset.built) return;
+    c.dataset.built = '1';
+    function reel(id){
+      let items = '';
+      for (let i=0; i<10; i++) items += `<div class="p10-slots-reel-item">${SL_SYMBOLS[randi(0,SL_SYMBOLS.length-1)]}</div>`;
+      return `<div class="p10-slots-reel" id="sl-reel-${id}"><div class="p10-slots-reel-track" id="sl-track-${id}">${items}</div></div>`;
+    }
+    let payTbl = '';
+    SL_SYMBOLS.forEach(s=>{ payTbl += `<div class="p10-slots-pay-row"><span class="sym">${s}${s}${s}</span><span class="mult">x${SL_PAYS[s]}</span></div>`; });
+    c.innerHTML = `
+      <div class="p10-pane">
+        <div class="p10-card">
+          <div class="p10-stats">
+            <div class="p10-stat"><div class="p10-label">СТАВКА</div><div class="p10-val" id="sl-bet-val">100 ₽</div></div>
+            <div class="p10-stat"><div class="p10-label">МАКС.</div><div class="p10-val gold">x100</div></div>
+            <div class="p10-stat"><div class="p10-label">ПОСЛ.</div><div class="p10-val" id="sl-last">—</div></div>
+          </div>
+          <div class="p10-slots-machine">
+            <div class="p10-slots-screen">${reel(1)}${reel(2)}${reel(3)}</div>
+            <div class="p10-slots-payline">═══ PAYLINE ═══</div>
+          </div>
+          <div class="p10-slots-paytable">${payTbl}</div>
+          <div class="p10-bet-row">
+            <input class="p10-bet-input" id="sl-bet" type="number" min="10" max="50000" value="100" oninput="P10.slBetInput()">
+            <button class="p10-quick" onclick="P10.slBet(100)">100</button>
+            <button class="p10-quick" onclick="P10.slBet(500)">500</button>
+            <button class="p10-quick" onclick="P10.slBet(1000)">1K</button>
+          </div>
+          <button class="p10-go-btn gold" id="sl-spin" onclick="P10.slSpin()">🎰 SPIN</button>
+          <div class="p10-result" id="sl-result"></div>
+        </div>
+      </div>`;
+    P10.slUpdate();
+  };
+  P10.slBet = function(v){ P10.SL.bet = Math.max(10, Math.min(50000, v|0)); $('sl-bet').value = P10.SL.bet; P10.slUpdate(); };
+  P10.slBetInput = function(){ P10.SL.bet = Math.max(10, Math.min(50000, (+$('sl-bet').value)||0)); P10.slUpdate(); };
+  P10.slUpdate = function(){ $('sl-bet-val').textContent = fmt(P10.SL.bet); };
+  P10.slSpin = function(){
+    if (P10.SL.spinning) return;
+    if (!checkBet(P10.SL.bet)) return;
+    changeBal(-P10.SL.bet); sfx('Click');
+    P10.SL.spinning = true; $('sl-spin').disabled = true;
+    // pick result for each reel; rare to all-3 match
+    const targets = [];
+    for (let r=0; r<3; r++){
+      // weight: lower-pay more frequent
+      const w = [22,18,14,10,6,3]; // for 🔫,🔪,💣,🎯,💎,👑
+      const sum = w.reduce((a,b)=>a+b,0);
+      let p = Math.random()*sum, idx=0;
+      for (let i=0; i<w.length; i++){ p -= w[i]; if (p<=0){ idx=i; break; } }
+      targets.push(SL_SYMBOLS[idx]);
+    }
+    [1,2,3].forEach((id, i)=>{
+      const track = $('sl-track-'+id);
+      // build a long strip ending at the target symbol
+      const strip = [];
+      const target = targets[i];
+      const N = 22 + i*3; // different delays per reel
+      for (let k=0; k<N; k++) strip.push(SL_SYMBOLS[randi(0,SL_SYMBOLS.length-1)]);
+      strip.push(target); // final visible symbol
+      strip.push(SL_SYMBOLS[randi(0,SL_SYMBOLS.length-1)]); // padding
+      track.innerHTML = strip.map(s=>`<div class="p10-slots-reel-item">${s}</div>`).join('');
+      track.style.transition = 'none';
+      track.style.transform = 'translateY(0)';
+      // force reflow
+      void track.offsetHeight;
+      const cellH = 90;
+      const offset = (strip.length - 2) * cellH;
+      const dur = 1.6 + i*0.5;
+      track.style.transition = `transform ${dur}s cubic-bezier(.22,.61,.36,1)`;
+      track.style.transform = `translateY(-${offset}px)`;
+    });
+    setTimeout(()=>{
+      let mult = 0;
+      if (targets[0] === targets[1] && targets[1] === targets[2]){
+        mult = SL_PAYS[targets[0]];
+      } else if (targets[0] === targets[1] || targets[1] === targets[2]){
+        mult = 1; // small partial-match: return bet
+      }
+      const win = Math.floor(P10.SL.bet * mult);
+      if (win > 0){
+        changeBal(win);
+        $('sl-result').textContent = `✓ ${targets.join('')} · x${mult} · +${fmt(win)}`;
+        $('sl-result').className = 'p10-result win';
+        $('sl-last').textContent = 'x'+mult;
+        $('sl-last').className = 'p10-val green';
+        sfx('Win');
+      } else {
+        $('sl-result').textContent = `✗ ${targets.join('')} · -${fmt(P10.SL.bet)}`;
+        $('sl-result').className = 'p10-result lose';
+        $('sl-last').textContent = '✗';
+        $('sl-last').className = 'p10-val red';
+      }
+      P10.SL.spinning = false; $('sl-spin').disabled = false;
+    }, 2400);
+  };
+
+  // ════════════════ GAME 7: KENO ═══════════════════════════════════
+  // Pick up to 10 from 40 cells, draws 10 hits.
+  const KN_PAYS = {
+    1:[0,3.5],
+    2:[0,1.5,8],
+    3:[0,1,4,30],
+    4:[0,0.5,2,8,80],
+    5:[0,0.5,1.5,4,15,200],
+    6:[0,0,1,2,8,40,500],
+    7:[0,0,1,1.5,4,15,80,800],
+    8:[0,0,0,1,3,8,40,200,1000],
+    9:[0,0,0,1,2,5,15,80,400,2000],
+    10:[0,0,0,1,2,4,10,40,200,800,5000],
+  };
+  P10.KN = { bet:100, picks:new Set(), playing:false };
+  P10.buildKeno = function(){
+    const c = $('mg-kn'); if (!c || c.dataset.built) return;
+    c.dataset.built = '1';
+    let cells = '';
+    for (let i=1; i<=40; i++) cells += `<div class="p10-keno-cell" data-n="${i}" onclick="P10.knPick(${i})">${i}</div>`;
+    c.innerHTML = `
+      <div class="p10-pane">
+        <div class="p10-card">
+          <div class="p10-stats">
+            <div class="p10-stat"><div class="p10-label">ВЫБРАНО</div><div class="p10-val" id="kn-picked">0 / 10</div></div>
+            <div class="p10-stat"><div class="p10-label">СТАВКА</div><div class="p10-val" id="kn-bet-val">100 ₽</div></div>
+            <div class="p10-stat"><div class="p10-label">ПОПАДАНИЯ</div><div class="p10-val gold" id="kn-hits">0</div></div>
+          </div>
+          <div class="p10-keno-grid">${cells}</div>
+          <div class="p10-keno-paytable" id="kn-paytable"></div>
+          <div class="p10-bet-row">
+            <input class="p10-bet-input" id="kn-bet" type="number" min="10" max="50000" value="100" oninput="P10.knBetInput()">
+            <button class="p10-quick" onclick="P10.knBet(100)">100</button>
+            <button class="p10-quick" onclick="P10.knBet(500)">500</button>
+            <button class="p10-quick" onclick="P10.knBet(1000)">1K</button>
+            <button class="p10-quick" onclick="P10.knClear()">CLEAR</button>
+            <button class="p10-quick" onclick="P10.knRandom()">RANDOM 10</button>
+          </div>
+          <button class="p10-go-btn" id="kn-go" onclick="P10.knDraw()">🎱 DRAW</button>
+          <div class="p10-result" id="kn-result"></div>
+        </div>
+      </div>`;
+    P10.knUpdate();
+  };
+  P10.knBet = function(v){ P10.KN.bet = Math.max(10, Math.min(50000, v|0)); $('kn-bet').value = P10.KN.bet; P10.knUpdate(); };
+  P10.knBetInput = function(){ P10.KN.bet = Math.max(10, Math.min(50000, (+$('kn-bet').value)||0)); P10.knUpdate(); };
+  P10.knPick = function(n){
+    if (P10.KN.playing) return;
+    if (P10.KN.picks.has(n)){
+      P10.KN.picks.delete(n);
+      document.querySelector(`#mg-kn .p10-keno-cell[data-n="${n}"]`).classList.remove('pick');
+    } else {
+      if (P10.KN.picks.size >= 10) { toast('Максимум 10 чисел','error'); return; }
+      P10.KN.picks.add(n);
+      document.querySelector(`#mg-kn .p10-keno-cell[data-n="${n}"]`).classList.add('pick');
+    }
+    P10.knUpdate();
+  };
+  P10.knClear = function(){
+    if (P10.KN.playing) return;
+    P10.KN.picks.clear();
+    document.querySelectorAll('#mg-kn .p10-keno-cell').forEach(c=>c.classList.remove('pick','draw','hit'));
+    $('kn-result').textContent = ''; $('kn-result').className = 'p10-result';
+    P10.knUpdate();
+  };
+  P10.knRandom = function(){
+    if (P10.KN.playing) return;
+    P10.knClear();
+    const avail = []; for (let i=1; i<=40; i++) avail.push(i);
+    for (let k=0; k<10; k++){
+      const idx = randi(0, avail.length-1);
+      P10.KN.picks.add(avail[idx]); avail.splice(idx,1);
+    }
+    P10.KN.picks.forEach(n=> document.querySelector(`#mg-kn .p10-keno-cell[data-n="${n}"]`).classList.add('pick'));
+    P10.knUpdate();
+  };
+  P10.knUpdate = function(){
+    $('kn-picked').textContent = P10.KN.picks.size + ' / 10';
+    $('kn-bet-val').textContent = fmt(P10.KN.bet);
+    // Update paytable preview
+    const k = P10.KN.picks.size;
+    const tbl = $('kn-paytable');
+    if (!tbl) return;
+    if (k === 0){ tbl.innerHTML = '<span style="color:rgba(255,255,255,.3);font-size:.7rem">Выбери от 1 до 10 чисел для просмотра таблицы выплат</span>'; return; }
+    let html = '';
+    const pays = KN_PAYS[k] || [];
+    pays.forEach((p,i)=>{
+      if (p > 0) html += `<div class="item">${i} попад. <b>x${p}</b></div>`;
+    });
+    tbl.innerHTML = html || '<span style="color:rgba(255,255,255,.4);font-size:.7rem">Нет выплат</span>';
+  };
+  P10.knDraw = function(){
+    if (P10.KN.picks.size < 1){ toast('Выбери хотя бы 1 число','error'); return; }
+    if (!checkBet(P10.KN.bet)) return;
+    changeBal(-P10.KN.bet); sfx('Click');
+    P10.KN.playing = true; $('kn-go').disabled = true;
+    // clear previous draw
+    document.querySelectorAll('#mg-kn .p10-keno-cell').forEach(c=>c.classList.remove('draw','hit'));
+    // pick 10 random draws (no repeat)
+    const avail = []; for (let i=1; i<=40; i++) avail.push(i);
+    const draws = [];
+    for (let k=0; k<10; k++){
+      const idx = randi(0, avail.length-1);
+      draws.push(avail[idx]); avail.splice(idx,1);
+    }
+    let hits = 0;
+    draws.forEach((n,i)=>{
+      setTimeout(()=>{
+        const cell = document.querySelector(`#mg-kn .p10-keno-cell[data-n="${n}"]`);
+        if (cell){
+          if (P10.KN.picks.has(n)){ cell.classList.add('hit'); hits++; sfx('Click'); }
+          else cell.classList.add('draw');
+          $('kn-hits').textContent = hits;
+        }
+        if (i === draws.length - 1){
+          // settle
+          const k = P10.KN.picks.size;
+          const pays = KN_PAYS[k] || [];
+          const m = pays[hits] || 0;
+          if (m > 0){
+            const win = Math.floor(P10.KN.bet * m);
+            changeBal(win);
+            $('kn-result').textContent = `✓ ${hits}/${k} попаданий · x${m} · +${fmt(win)}`;
+            $('kn-result').className = 'p10-result win';
+            sfx('Win');
+          } else {
+            $('kn-result').textContent = `✗ ${hits}/${k} попаданий · -${fmt(P10.KN.bet)}`;
+            $('kn-result').className = 'p10-result lose';
+          }
+          P10.KN.playing = false; $('kn-go').disabled = false;
+        }
+      }, 180 + i*180);
+    });
+  };
+
+  // ─── Expose convenience helper for MAX button in DICE ─────────────
+  window.getBal2 = function(){ return Math.min(50000, getBal()); };
+
+  // ─── Boot ─────────────────────────────────────────────────────────
+  function boot(){
+    if (!P10.injectTabs()){
+      // section not built yet — try again later
+      setTimeout(boot, 400);
+    }
+  }
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', ()=>setTimeout(boot, 300));
+  } else {
+    setTimeout(boot, 300);
+  }
+  // Also watch for mini-games tab activation (since hub is built lazily)
+  const obs = new MutationObserver(()=>{ try{ P10.injectTabs(); }catch(_){} });
+  obs.observe(document.body, {childList:true, subtree:true});
+})();
+</script>
+<!-- PHASE10_JS_END -->
